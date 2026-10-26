@@ -66,7 +66,7 @@ def jb_receta_producto(id_producto: int):
 @jb_router.get("/{id_producto}/costo", response_model=JbCostoProducto, dependencies=JB_TODOS,
                summary="Costo de producción y margen", responses=JB_R404)
 def jb_costo_producto(id_producto: int):
-    """Costo = Σ (cantidad × costo_unitario) de la receta. Margen = precio de venta − costo (RF06).
+    """Costo = suma de (cantidad x costo_unitario) de la receta. Margen = precio de venta - costo (RF06).
 
     **Roles:** todos los usuarios autenticados.
     """

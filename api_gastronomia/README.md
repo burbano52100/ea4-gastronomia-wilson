@@ -1,4 +1,4 @@
-# API REST — Unidad Productiva de Gastronomía (CGDSS)
+# API REST: Unidad Productiva de Gastronomía (CGDSS)
 
 **EA4 · Análisis y Desarrollo de Software · Ficha 3312744**
 Prototipo de API REST con **Python + FastAPI + MongoDB** que hace el CRUD de la información de la Unidad Productiva de Gastronomía: productos, recetas, insumos, proveedores, compras, clientes, pedidos, reportes y calificaciones. Todos los servicios están protegidos con **JWT** y **roles**.
@@ -10,19 +10,19 @@ Prototipo de API REST con **Python + FastAPI + MongoDB** que hace el CRUD de la 
 ## Índice
 
 - [Resumen: qué pide el instructivo y dónde está](#resumen-qué-pide-el-instructivo-y-dónde-está)
-- **PARTE A — Ponerla a funcionar**
+- **PARTE A: Ponerla a funcionar**
   - [A1. Inicio rápido (en este computador ya está todo instalado)](#a1-inicio-rápido-en-este-computador-ya-está-todo-instalado)
   - [A2. Instalación desde cero (otro computador o clonado de GitHub)](#a2-instalación-desde-cero-otro-computador-o-clonado-de-github)
   - [A3. Comandos del día a día](#a3-comandos-del-día-a-día)
   - [A4. Ver las bases de datos en MongoDB Compass](#a4-ver-las-bases-de-datos-en-mongodb-compass)
   - [A5. Registrar sus datos (la base empieza vacía)](#a5-registrar-sus-datos-la-base-empieza-vacía)
-- **PARTE B — Usarla desde el navegador (Swagger)**
-- **PARTE C — Usarla desde Thunder Client (VS Code)**
-- **PARTE D — Entender el proyecto (guía de estudio)**
-- **PARTE E — Referencia: endpoints, ejemplos, diccionario de datos**
-- **PARTE F — Entrega: GitHub, sustentación y anexo**
-- **PARTE G — Solución de problemas**
-- **PARTE H — Cómo hacer cambios que pida el instructor** (incluye el ejemplo completo de un **descuento manual**)
+- **PARTE B: Usarla desde el navegador (Swagger)**
+- **PARTE C: Usarla desde Thunder Client (VS Code)**
+- **PARTE D: Entender el proyecto (guía de estudio)**
+- **PARTE E: Referencia (endpoints, ejemplos, diccionario de datos)**
+- **PARTE F: Entrega (GitHub, sustentación y anexo)**
+- **PARTE G: Solución de problemas**
+- **PARTE H: Cómo hacer cambios que pida el instructor** (incluye el ejemplo completo de un **descuento manual**)
 
 ---
 
@@ -30,7 +30,7 @@ Prototipo de API REST con **Python + FastAPI + MongoDB** que hace el CRUD de la 
 
 | Pide el instructivo | Dónde está en el proyecto |
 |---|---|
-| API REST con Python (FastAPI) y arquitectura por capas | `app/` → `routers/`, `services/`, `repositories/`, `models/`, `schemas/` |
+| API REST con Python (FastAPI) y arquitectura por capas | `app/` -> `routers/`, `services/`, `repositories/`, `models/`, `schemas/` |
 | CRUD de usuarios, categorías, productos, insumos, recetas, proveedores, compras, clientes, pedidos y calificaciones | 10 routers en `app/routers/` (5 servicios cada uno) |
 | Endpoints de consulta y procesos de negocio | 12 endpoints extra: receta, costo, stock bajo, por vencer, historiales, estado, reportes, promedio |
 | Reglas de negocio RN01 a RN06 | `app/services/` (ver [D4](#d4-dónde-está-cada-regla-de-negocio)) |
@@ -51,21 +51,21 @@ Prototipo de API REST con **Python + FastAPI + MongoDB** que hace el CRUD de la 
 
 ---
 
-# PARTE A — Ponerla a funcionar
+# PARTE A: Ponerla a funcionar
 
 ## A1. Inicio rápido (en este computador ya está todo instalado)
 
 Ya están listos el entorno virtual (`venv`), las librerías, el archivo `.env` y las bases de datos. Las bases empiezan **sin datos de prueba**: solo tienen el usuario administrador, las 4 categorías que nombra el instructivo y su ejemplo de calificación ([A5](#a5-registrar-sus-datos-la-base-empieza-vacía)). Solo hay que encender la API.
 
-**Paso 1.** Abra la carpeta `api_gastronomia` en VS Code (*Archivo → Abrir carpeta*).
+**Paso 1.** Abra la carpeta `api_gastronomia` en VS Code (*Archivo -> Abrir carpeta*).
 
-**Paso 2.** Abra una terminal (*Terminal → Nueva terminal*) y active el entorno virtual:
+**Paso 2.** Abra una terminal (*Terminal -> Nueva terminal*) y active el entorno virtual:
 
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-✅ Al inicio de la línea debe aparecer `(venv)`.
+Al inicio de la línea debe aparecer `(venv)`.
 
 **Paso 3.** Encienda la API:
 
@@ -73,9 +73,9 @@ Ya están listos el entorno virtual (`venv`), las librerías, el archivo `.env` 
 uvicorn app.jb_main:jb_app --reload
 ```
 
-✅ Debe ver: `Uvicorn running on http://127.0.0.1:8000`
+Debe ver: `Uvicorn running on http://127.0.0.1:8000`
 
-**Paso 4.** Abra en el navegador **http://localhost:8000**. Lo lleva solo a la documentación (Swagger). Continúe en la [PARTE B](#parte-b--usarla-desde-el-navegador-swagger).
+**Paso 4.** Abra en el navegador **http://localhost:8000**. Lo lleva solo a la documentación (Swagger). Continúe en la [PARTE B](#parte-b-usarla-desde-el-navegador-swagger).
 
 > Para apagar la API, presione `Ctrl + C` en la terminal. Mientras la use, no cierre esa terminal.
 
@@ -85,14 +85,14 @@ uvicorn app.jb_main:jb_app --reload
 - **Python 3.11 o superior**: probado con 3.15.
 - **MongoDB Community Server**: probado con 9.0, instalado como servicio de Windows.
 - **MongoDB Compass**: para ver los datos.
-- **VS Code**. La extensión **Thunder Client** es opcional ([PARTE C](#parte-c--usarla-desde-thunder-client-vs-code)).
+- **VS Code**. La extensión **Thunder Client** es opcional ([PARTE C](#parte-c-usarla-desde-thunder-client-vs-code)).
 - **Git**.
 
-| # | Qué hacer | Comando | ✅ Cómo saber que funcionó |
+| # | Qué hacer | Comando | Cómo saber que funcionó |
 |---|---|---|---|
 | 1 | Verificar Python | `python --version` | `Python 3.11` o superior |
 | 2 | Verificar que MongoDB está encendido | `Get-Service MongoDB` | `Status: Running` |
-| 3 | Entrar a la carpeta del proyecto | `cd api_gastronomia` | — |
+| 3 | Entrar a la carpeta del proyecto | `cd api_gastronomia` | - |
 | 4 | Crear el entorno virtual | `python -m venv venv` | Aparece la carpeta `venv/` |
 | 5 | Activarlo | `.\venv\Scripts\Activate.ps1` | Aparece `(venv)` |
 | 6 | Instalar las librerías | `pip install -r requirements.txt` | `Successfully installed ...` |
@@ -109,17 +109,17 @@ uvicorn app.jb_main:jb_app --reload
 >
 > El script **03** (usuario de MongoDB con privilegios mínimos) es aparte y opcional: vea [F6](#f6-activar-el-usuario-con-privilegios-mínimos-opcional).
 
-**En VS Code, seleccione el intérprete del entorno virtual** para que no marque errores en los `import`: `Ctrl+Shift+P` → *Python: Select Interpreter* → `.\venv\Scripts\python.exe`.
+**En VS Code, seleccione el intérprete del entorno virtual** para que no marque errores en los `import`: `Ctrl+Shift+P` -> *Python: Select Interpreter* -> `.\venv\Scripts\python.exe`.
 
 ## A3. Comandos del día a día
 
-| Para… | Comando (con `(venv)` activo, dentro de `api_gastronomia`) |
+| Para... | Comando (con `(venv)` activo, dentro de `api_gastronomia`) |
 |---|---|
 | Encender la API | `uvicorn app.jb_main:jb_app --reload` |
 | Encender la API en otro puerto | `uvicorn app.jb_main:jb_app --reload --port 8001` |
 | Volver a crear las bases (vacías, con el admin) | Los 3 comandos de abajo |
 | Crear el usuario de MongoDB con privilegios mínimos | `python database/03_jb_dcl_usuarios.py` |
-| Ver los datos | Abrir **MongoDB Compass** → `mongodb://localhost:27017` |
+| Ver los datos | Abrir **MongoDB Compass** -> `mongodb://localhost:27017` |
 
 **Volver a crear las bases** (borra lo que haya y deja solo el admin, las 4 categorías y el ejemplo de calificación del instructivo). Ejecute los 3 en este orden:
 
@@ -129,7 +129,7 @@ python database/02_jb_dml_datos_prueba.py
 python database/04_jb_mongo_calificaciones.py --reiniciar
 ```
 
-Con `--reiniciar`, los scripts 01 y 04 guardan primero un respaldo de la base ([F5](#f5-respaldo-y-restauración)). Úselo también después de cambiar `app/models/jb_modelos.py`, para que MongoDB aplique la validación nueva ([PARTE H](#parte-h--cómo-hacer-cambios-que-pida-el-instructor)).
+Con `--reiniciar`, los scripts 01 y 04 guardan primero un respaldo de la base ([F5](#f5-respaldo-y-restauración)). Úselo también después de cambiar `app/models/jb_modelos.py`, para que MongoDB aplique la validación nueva ([PARTE H](#parte-h-cómo-hacer-cambios-que-pida-el-instructor)).
 
 ## A4. Ver las bases de datos en MongoDB Compass
 
@@ -148,9 +148,9 @@ Con `--reiniciar`, los scripts 01 y 04 guardan primero un respaldo de la base ([
    - **Schema**: pulse **Analyze** para ver los campos y sus tipos.
    - **Indexes**: los índices. Los que dicen **UNIQUE** no dejan repetir el valor.
    - **Validation**: la regla `$jsonSchema` de la colección.
-5. Lo que registre con la API aparece aquí. Si no lo ve, pulse el botón de **recargar** (🔄) de la colección.
+5. Lo que registre con la API aparece aquí. Si no lo ve, pulse el botón de **recargar** de la colección.
 
-> Puede editar un documento con el lápiz ✏️, pero el cambio debe cumplir el `$jsonSchema`; si no, Compass muestra *Document failed validation*. Es mejor hacer los cambios con la API, porque además aplica las reglas de negocio. La contraseña se ve como un hash `$2b$12$...` y no se puede escribir a mano ([A5](#a5-registrar-sus-datos-la-base-empieza-vacía)).
+> Puede editar un documento con el ícono del lápiz, pero el cambio debe cumplir el `$jsonSchema`; si no, Compass muestra *Document failed validation*. Es mejor hacer los cambios con la API, porque además aplica las reglas de negocio. La contraseña se ve como un hash `$2b$12$...` y no se puede escribir a mano ([A5](#a5-registrar-sus-datos-la-base-empieza-vacía)).
 
 ## A5. Registrar sus datos (la base empieza vacía)
 
@@ -179,14 +179,14 @@ Con `--reiniciar`, los scripts 01 y 04 guardan primero un respaldo de la base ([
 
 | # | Qué | Endpoint | Necesita |
 |---|---|---|---|
-| 1 | Usuarios CAJERO y COCINERO | `POST /usuarios` | — |
-| 2 | Más categorías, si quiere (ya hay 4) | `POST /categorias` | — |
+| 1 | Usuarios CAJERO y COCINERO | `POST /usuarios` | - |
+| 2 | Más categorías, si quiere (ya hay 4) | `POST /categorias` | - |
 | 3 | Productos | `POST /productos` | Una categoría |
-| 4 | Insumos | `POST /insumos` | — |
+| 4 | Insumos | `POST /insumos` | - |
 | 5 | Recetas | `POST /recetas` | Un producto y un insumo |
-| 6 | Proveedores | `POST /proveedores` | — |
+| 6 | Proveedores | `POST /proveedores` | - |
 | 7 | Compras (suben el stock, RN02) | `POST /compras` | Un proveedor y los insumos |
-| 8 | Clientes | `POST /clientes` | — |
+| 8 | Clientes | `POST /clientes` | - |
 | 9 | Pedidos | `POST /pedidos` | Un cliente y productos DISPONIBLES |
 | 10 | Entregar un pedido (descuenta el inventario, RN03) | `PATCH /pedidos/{id}/estado` | Recetas de sus productos y stock suficiente |
 | 11 | Calificaciones | `POST /calificaciones` | Un pedido ENTREGADO |
@@ -196,7 +196,7 @@ En Swagger cada `POST` trae un ejemplo al pulsar **Try it out**. Los ids de los 
 
 ---
 
-# PARTE B — Usarla desde el navegador (Swagger)
+# PARTE B: Usarla desde el navegador (Swagger)
 
 FastAPI genera sola una página web para probar cada endpoint. No hace falta instalar nada.
 
@@ -222,29 +222,29 @@ FastAPI genera sola una página web para probar cada endpoint. No hace falta ins
    { "correo": "burbano@gastronomia.com", "password": "Admin123*" }
    ```
 4. Pulse **Execute**.
-5. ✅ En *Response body* aparece `"access_token": "eyJhbGciOi..."`. Copie **solo el texto del token**, sin las comillas.
+5. En *Response body* aparece `"access_token": "eyJhbGciOi..."`. Copie **solo el texto del token**, sin las comillas.
 
 **B2. Autorizarse**
-1. Suba al inicio de la página y pulse el botón **Authorize** 🔒.
+1. Suba al inicio de la página y pulse el botón **Authorize**.
 2. Pegue el token en el campo *Value*. No escriba la palabra `Bearer`: Swagger la agrega sola.
 3. Pulse **Authorize** y luego **Close**.
-4. ✅ Los candados de los endpoints aparecen cerrados.
+4. Los candados de los endpoints aparecen cerrados.
 
 **B3. Consultar algo**
 1. Abra `GET /api/v1/categorias`, pulse **Try it out** y luego **Execute**.
-2. ✅ Respuesta 200 con las 4 categorías del instructivo: Platos, Bebidas, Panadería y Repostería.
+2. Respuesta 200 con las 4 categorías del instructivo: Platos, Bebidas, Panadería y Repostería.
 
 **B4. Crear algo**
-1. Abra `POST /api/v1/categorias` → **Try it out**. El ejemplo ya viene diligenciado.
+1. Abra `POST /api/v1/categorias` -> **Try it out**. El ejemplo ya viene diligenciado.
 2. Pulse **Execute**.
-3. ✅ Respuesta **201** con el `id_categoria` nuevo.
+3. Respuesta **201** con el `id_categoria` nuevo.
 4. Si lo ejecuta otra vez con el mismo nombre, la respuesta es **409** porque el nombre no se puede repetir.
 
 **B5. Ver los errores de seguridad (se piden en la sustentación)**
 
-| Para ver… | Haga esto |
+| Para ver... | Haga esto |
 |---|---|
-| **401** sin token | Pulse **Authorize** → **Logout** y ejecute cualquier endpoint |
+| **401** sin token | Pulse **Authorize** -> **Logout** y ejecute cualquier endpoint |
 | **403** rol sin permiso | Cree un usuario CAJERO con `POST /api/v1/usuarios`, inicie sesión con él, autorícese con ese token y ejecute `GET /api/v1/reportes/ventas` |
 | **404** no existe | `GET /api/v1/productos/999` |
 | **409** conflicto | Cree dos veces la misma categoría |
@@ -252,24 +252,24 @@ FastAPI genera sola una página web para probar cada endpoint. No hace falta ins
 
 **B6. Cambiar de usuario**
 
-Pulse **Authorize** → **Logout**, haga login con otro usuario y vuelva a autorizarse con el token nuevo.
+Pulse **Authorize** -> **Logout**, haga login con otro usuario y vuelva a autorizarse con el token nuevo.
 
 > El token dura **60 minutos** (`JWT_MINUTOS` en `.env`). Si empieza a recibir 401 con el mensaje "El token expiró", haga login otra vez.
 
 ---
 
-# PARTE C — Usarla desde Thunder Client (VS Code)
+# PARTE C: Usarla desde Thunder Client (VS Code)
 
 Thunder Client hace las mismas peticiones que Swagger, pero desde VS Code. Es opcional y las peticiones se crean a mano.
 
 1. Encienda la API ([A1](#a1-inicio-rápido-en-este-computador-ya-está-todo-instalado)).
-2. En VS Code pulse el ícono del **rayo ⚡** en la barra izquierda. La primera vez le pide iniciar sesión con una cuenta gratuita.
-3. **Login:** **New Request** → método `POST` → URL `http://localhost:8000/api/v1/auth/login` → pestaña **Body** → **JSON**:
+2. En VS Code pulse el ícono del **rayo** en la barra izquierda. La primera vez le pide iniciar sesión con una cuenta gratuita.
+3. **Login:** **New Request** -> método `POST` -> URL `http://localhost:8000/api/v1/auth/login` -> pestaña **Body** -> **JSON**:
    ```json
    { "correo": "burbano@gastronomia.com", "password": "Admin123*" }
    ```
    Pulse **Send** y copie el `access_token` de la respuesta, sin las comillas.
-4. **Cualquier otra petición:** **New Request** → elija el método y la URL, por ejemplo `POST http://localhost:8000/api/v1/pedidos` → pestaña **Auth** → **Bearer** → pegue el token → pestaña **Body** → **JSON**:
+4. **Cualquier otra petición:** **New Request** -> elija el método y la URL, por ejemplo `POST http://localhost:8000/api/v1/pedidos` -> pestaña **Auth** -> **Bearer** -> pegue el token -> pestaña **Body** -> **JSON**:
    ```json
    { "id_cliente": 1, "tipo_pedido": "MESA", "detalle": [ { "id_producto": 1, "cantidad": 2 } ] }
    ```
@@ -279,29 +279,18 @@ Thunder Client hace las mismas peticiones que Swagger, pero desde VS Code. Es op
 
 ---
 
-# PARTE D — Entender el proyecto (guía de estudio)
+# PARTE D: Entender el proyecto (guía de estudio)
 
 ## D1. La arquitectura por capas
 
-```
- Cliente (Swagger / Thunder Client / futura app web o móvil)
-    │  HTTP + JSON + "Authorization: Bearer <token>"
-    ▼
- ┌───────────────┐   ¿Hay token? ¿Su rol tiene permiso?   →  401 / 403
- │  routers/     │   ¿El JSON tiene el formato correcto?  →  422  (schemas/)
- └──────┬────────┘
-        ▼
- ┌───────────────┐   Reglas de negocio RN01..RN06          →  400 / 404 / 409
- │  services/    │
- └──────┬────────┘
-        ▼
- ┌───────────────┐   Única capa que habla con MongoDB
- │ repositories/ │
- └──────┬────────┘
-        ▼
-   MongoDB:  bd_gastronomia  +  bd_gastronomia_nosql
-   (models/ define la validación $jsonSchema de cada colección)
-```
+| Paso | Capa | Qué hace | Si algo falla responde |
+|---|---|---|---|
+| 1 | Cliente (Swagger / Thunder Client / futura app web o móvil) | Envía HTTP + JSON + `Authorization: Bearer <token>` | |
+| 2 | `routers/` | Revisa si hay token y si su rol tiene permiso | 401 / 403 |
+| 3 | `schemas/` | Revisa que el JSON tenga el formato correcto | 422 |
+| 4 | `services/` | Aplica las reglas de negocio RN01..RN06 | 400 / 404 / 409 |
+| 5 | `repositories/` | Única capa que habla con MongoDB | |
+| 6 | MongoDB: `bd_gastronomia` + `bd_gastronomia_nosql` | Guarda los datos; `models/` define la validación `$jsonSchema` de cada colección | |
 
 Como en un restaurante:
 - El **router** es el mesero: recibe el pedido, revisa quién lo hace y entrega la respuesta.
@@ -315,32 +304,32 @@ Como en un restaurante:
 
 ```
 api_gastronomia/
-├── app/
-│   ├── jb_main.py                 Punto de entrada: crea la app, registra routers y manejadores de error
-│   ├── core/
-│   │   ├── jb_config.py           Lee el .env (MONGO_URI, JWT_SECRET, ...)
-│   │   ├── jb_security.py         bcrypt, creación y verificación del JWT, control de roles
-│   │   ├── jb_respuestas.py       Errores documentados en Swagger (400, 401, 403, 404, 409)
-│   │   ├── jb_errores.py          Traduce al español los errores de FastAPI y Pydantic (422, 404, 405)
-│   │   └── jb_utilidades.py       Hora de Colombia y redondeo de decimales
-│   ├── database/
-│   │   └── jb_conexion_mongo.py   Conexión a las 2 bases, Decimal128 y contador de ids
-│   ├── models/
-│   │   └── jb_modelos.py          Validación $jsonSchema e índices de cada colección (el "DDL")
-│   ├── schemas/                   Pydantic: qué datos entran (Crear/Actualizar) y qué sale (Respuesta)
-│   ├── repositories/              Consultas a MongoDB (find, insert, update, aggregate)
-│   │   └── jb_base_repository.py  Las 5 operaciones CRUD que heredan todos los repositorios
-│   ├── services/                  Reglas de negocio (RN01..RN06) y validaciones
-│   └── routers/                   Endpoints de cada recurso, con roles y documentación
-├── database/
-│   ├── 01_jb_ddl_bd_gastronomia.py     DDL: colecciones + $jsonSchema + índices
-│   ├── 02_jb_dml_datos_prueba.py       DML: usuario administrador (JB_ADMIN) y las 4 categorías del instructivo
-│   ├── 03_jb_dcl_usuarios.py           DCL: usuario de MongoDB con privilegios mínimos
-│   ├── 04_jb_mongo_calificaciones.py   NoSQL: calificaciones con $jsonSchema + datos
-│   └── jb_utilidades_bd.py             Funciones que usan 01, 02 y 04: respaldo, colecciones y contadores
-├── .env / .env.example / .gitignore
-├── requirements.txt
-└── README.md
+    app/
+        jb_main.py                 Punto de entrada: crea la app, registra routers y manejadores de error
+        core/
+            jb_config.py           Lee el .env (MONGO_URI, JWT_SECRET, ...)
+            jb_security.py         bcrypt, creación y verificación del JWT, control de roles
+            jb_respuestas.py       Errores documentados en Swagger (400, 401, 403, 404, 409)
+            jb_errores.py          Traduce al español los errores de FastAPI y Pydantic (422, 404, 405)
+            jb_utilidades.py       Hora de Colombia y redondeo de decimales
+        database/
+            jb_conexion_mongo.py   Conexión a las 2 bases, Decimal128 y contador de ids
+        models/
+            jb_modelos.py          Validación $jsonSchema e índices de cada colección (el "DDL")
+        schemas/                   Pydantic: qué datos entran (Crear/Actualizar) y qué sale (Respuesta)
+        repositories/              Consultas a MongoDB (find, insert, update, aggregate)
+            jb_base_repository.py  Las 5 operaciones CRUD que heredan todos los repositorios
+        services/                  Reglas de negocio (RN01..RN06) y validaciones
+        routers/                   Endpoints de cada recurso, con roles y documentación
+    database/
+        01_jb_ddl_bd_gastronomia.py     DDL: colecciones + $jsonSchema + índices
+        02_jb_dml_datos_prueba.py       DML: usuario administrador (JB_ADMIN) y las 4 categorías del instructivo
+        03_jb_dcl_usuarios.py           DCL: usuario de MongoDB con privilegios mínimos
+        04_jb_mongo_calificaciones.py   NoSQL: calificaciones con $jsonSchema + datos
+        jb_utilidades_bd.py             Funciones que usan 01, 02 y 04: respaldo, colecciones y contadores
+    .env / .env.example / .gitignore
+    requirements.txt
+    README.md
 ```
 
 ## D3. Ruta de estudio recomendada
@@ -355,7 +344,7 @@ Lea los archivos **en este orden**. Al final de cada paso intente responder las 
 | 2 | `database/jb_conexion_mongo.py` | ¿Por qué hay dos bases? ¿Qué hace `jb_siguiente_id`? ¿Para qué sirve `JbDecimalCodec`? |
 | 3 | `models/jb_modelos.py` | ¿Qué es `$jsonSchema`? ¿Qué equivale en MongoDB a `NOT NULL`, `UNIQUE` y `CHECK`? |
 | 4 | `core/jb_security.py` | ¿Qué guarda el token? ¿Cuándo responde 401 y cuándo 403? ¿Por qué bcrypt no se puede "descifrar"? |
-| 5 | Categorías completas: `schemas/jb_categoria_schema.py` → `repositories/jb_base_repository.py` → `services/jb_categoria_service.py` → `routers/jb_categorias_router.py` | ¿Qué hace cada capa? ¿Dónde se valida el 404? ¿Por qué hay tres esquemas (Crear, Actualizar, Respuesta)? |
+| 5 | Categorías completas: `schemas/jb_categoria_schema.py` -> `repositories/jb_base_repository.py` -> `services/jb_categoria_service.py` -> `routers/jb_categorias_router.py` | ¿Qué hace cada capa? ¿Dónde se valida el 404? ¿Por qué hay tres esquemas (Crear, Actualizar, Respuesta)? |
 | 6 | `jb_main.py` | ¿Cómo se registran los routers? ¿Quién convierte un correo repetido en 409? |
 | 7 | `services/jb_pedido_service.py` | ¿Dónde se calcula el total (RN01)? ¿Cómo se descuenta el inventario sin transacciones (RN03)? |
 | 8 | `services/jb_compra_service.py` | ¿Qué pasa con el inventario al crear, modificar o eliminar una compra (RN02)? |
@@ -366,8 +355,8 @@ Lea los archivos **en este orden**. Al final de cada paso intente responder las 
 
 | Regla | Qué dice | Dónde está | Cómo demostrarla |
 |---|---|---|---|
-| **RN01** | Subtotal = cantidad × precio_unitario. El total es la suma de subtotales y lo calcula la API | `jb_pedido_service.jb_preparar_detalle()`. El esquema `JbPedidoCrear` no tiene campos de precio | Crear un pedido enviando solo productos y cantidades: la respuesta trae precios y total |
-| **RN02** | Una compra suma al `stock_actual` y actualiza el `costo_unitario` | `jb_compra_service.jb_crear()` → `jb_insumo_repository.jb_registrar_entrada()` | Ver un insumo, registrar una compra de ese insumo y volver a verlo: el stock subió |
+| **RN01** | Subtotal = cantidad x precio_unitario. El total es la suma de subtotales y lo calcula la API | `jb_pedido_service.jb_preparar_detalle()`. El esquema `JbPedidoCrear` no tiene campos de precio | Crear un pedido enviando solo productos y cantidades: la respuesta trae precios y total |
+| **RN02** | Una compra suma al `stock_actual` y actualiza el `costo_unitario` | `jb_compra_service.jb_crear()` -> `jb_insumo_repository.jb_registrar_entrada()` | Ver un insumo, registrar una compra de ese insumo y volver a verlo: el stock subió |
 | **RN03** | Al pasar un pedido a ENTREGADO se descuentan los insumos de la receta. Si no alcanza, responde 409 | `jb_pedido_service.jb_descontar_inventario()` | Entregar un pedido normal (baja el stock) y uno con más unidades de las que alcanza el inventario (409, sin descontar nada) |
 | **RN04** | No se borra lo que tiene movimientos: se pasa a INACTIVO | `jb_eliminar()` de productos, insumos, clientes, proveedores, usuarios y categorías | El `DELETE` de un producto que ya se vendió responde `"tipo_borrado": "LOGICO"`. Uno que nunca se vendió se borra con `"FISICO"` |
 | **RN05** | Un pedido ENTREGADO o ANULADO no se modifica | `jb_pedido_service.jb_validar_abierto()` | El `PUT` de un pedido ENTREGADO responde 409 |
@@ -405,8 +394,8 @@ Lea los archivos **en este orden**. Al final de cada paso intente responder las 
 |---|---|---|
 | Tabla | Colección | Equivalente directo |
 | Fila | Documento JSON | Equivalente directo |
-| `INT PK AUTO_INCREMENT` | `_id` numérico con la colección `contadores` | Ids 1, 2, 3… como en el instructivo, en vez de `ObjectId` |
-| `FOREIGN KEY` | Campo con el id del otro documento (`id_categoria`, `id_cliente`…) que el servicio valida | MongoDB no tiene llaves foráneas: la API comprueba que exista |
+| `INT PK AUTO_INCREMENT` | `_id` numérico con la colección `contadores` | Ids 1, 2, 3... como en el instructivo, en vez de `ObjectId` |
+| `FOREIGN KEY` | Campo con el id del otro documento (`id_categoria`, `id_cliente`...) que el servicio valida | MongoDB no tiene llaves foráneas: la API comprueba que exista |
 | Tablas `detalle_pedido` y `detalle_compra` | Arreglo `detalle` **embebido** dentro del pedido o de la compra | El detalle siempre se lee junto con su pedido y no existe solo |
 | Tabla `recetas` (N:M) | Colección `recetas` aparte | Tiene su propio CRUD (`/recetas`) y relaciona productos con insumos |
 | `DECIMAL(10,2)` | `Decimal128` (en Python, `Decimal`) | El dinero no se guarda como `float` para evitar errores de redondeo |
@@ -416,7 +405,7 @@ Lea los archivos **en este orden**. Al final de cada paso intente responder las 
 
 ---
 
-# PARTE E — Referencia
+# PARTE E: Referencia
 
 ## E1. Usuarios y roles
 
@@ -463,7 +452,7 @@ Prefijo de todas las rutas: **`/api/v1`**. Todas exigen token, excepto `POST /au
 |---|---|---|---|
 | GET | `/productos/categoria/{id_categoria}` | Todos | Productos de una categoría |
 | GET | `/productos/{id}/receta` | Todos | Insumos, cantidades y costo de cada línea de la receta |
-| GET | `/productos/{id}/costo` | Todos | Costo de producción (Σ cantidad × costo_unitario) y margen |
+| GET | `/productos/{id}/costo` | Todos | Costo de producción (suma de cantidad x costo_unitario) y margen |
 | GET | `/insumos/stock-bajo` | ADMIN, COCINERO | Insumos con `stock_actual <= stock_minimo` |
 | GET | `/insumos/por-vencer?dias=7` | ADMIN, COCINERO | Insumos que vencen en los próximos N días |
 | GET | `/proveedores/{id}/compras` | ADMIN | Historial de compras a un proveedor |
@@ -478,15 +467,15 @@ Prefijo de todas las rutas: **`/api/v1`**. Todas exigen token, excepto `POST /au
 
 | Recurso | Si tiene movimientos | Si no tiene |
 |---|---|---|
-| Producto | Con pedidos → INACTIVO | Se borra junto con su receta |
-| Insumo | En recetas o compras → INACTIVO | Se borra |
-| Cliente | Con pedidos → INACTIVO | Se borra |
-| Proveedor | Con compras → INACTIVO | Se borra |
-| Usuario | Con pedidos o compras → INACTIVO | Se borra. No se puede borrar el propio usuario (400) |
-| Categoría | Con productos → INACTIVO | Se borra |
-| Pedido | Nunca se borra: queda **ANULADO**. Si ya está ENTREGADO o ANULADO → 409 | — |
-| Compra | Resta del inventario lo que había sumado y se borra. Si ese inventario ya se consumió → 409 | — |
-| Receta, calificación | — | Se borran |
+| Producto | Con pedidos -> INACTIVO | Se borra junto con su receta |
+| Insumo | En recetas o compras -> INACTIVO | Se borra |
+| Cliente | Con pedidos -> INACTIVO | Se borra |
+| Proveedor | Con compras -> INACTIVO | Se borra |
+| Usuario | Con pedidos o compras -> INACTIVO | Se borra. No se puede borrar el propio usuario (400) |
+| Categoría | Con productos -> INACTIVO | Se borra |
+| Pedido | Nunca se borra: queda **ANULADO**. Si ya está ENTREGADO o ANULADO -> 409 | - |
+| Compra | Resta del inventario lo que había sumado y se borra. Si ese inventario ya se consumió -> 409 | - |
+| Receta, calificación | - | Se borran |
 
 ## E3. Ejemplos de peticiones y respuestas
 
@@ -642,7 +631,7 @@ Convenciones:
 | Campo | Tipo BSON | Ob. | Llave / índice | Restricción / defecto | Descripción |
 |---|---|---|---|---|---|
 | `_id` (id_usuario) | int | Sí | PK | Auto (contadores) | Identificador |
-| identificacion | string | Sí | Único | 5–20 caracteres | Documento |
+| identificacion | string | Sí | Único | 5 a 20 caracteres | Documento |
 | nombres | string | Sí | | máx. 80 | Nombres |
 | apellidos | string | Sí | | máx. 80 | Apellidos |
 | correo | string | Sí | Único | máx. 120, formato correo, minúsculas | Usuario de acceso |
@@ -668,7 +657,7 @@ Convenciones:
 | nombre | string | Sí | | máx. 100 | Nombre |
 | descripcion | string / null | No | | | Descripción |
 | precio_venta | decimal | Sí | | > 0, 2 decimales | Precio de venta |
-| unidad_venta | string | Sí | | máx. 20 | Porción, unidad, vaso… |
+| unidad_venta | string | Sí | | máx. 20 | Porción, unidad, vaso... |
 | id_categoria | int | Sí | Ref. categorias, índice | Debe existir y estar ACTIVA | Categoría |
 | estado | string | Sí | | DISPONIBLE, AGOTADO, INACTIVO; defecto DISPONIBLE | Estado |
 
@@ -679,9 +668,9 @@ Convenciones:
 | `_id` (id_insumo) | int | Sí | PK | Auto | Identificador |
 | nombre | string | Sí | Único | máx. 100 | Nombre |
 | unidad_medida | string | Sí | | g, kg, ml, l, lb, unidad | Unidad |
-| stock_actual | decimal | Sí | | ≥ 0, 3 decimales | Existencias |
-| stock_minimo | decimal | Sí | | ≥ 0, 3 decimales | Nivel de alerta |
-| costo_unitario | decimal | Sí | | ≥ 0, 2 decimales | Costo por unidad de medida |
+| stock_actual | decimal | Sí | | >= 0, 3 decimales | Existencias |
+| stock_minimo | decimal | Sí | | >= 0, 3 decimales | Nivel de alerta |
+| costo_unitario | decimal | Sí | | >= 0, 2 decimales | Costo por unidad de medida |
 | fecha_vencimiento | date / null | No | Índice | | Vencimiento del lote actual |
 | estado | string | Sí | | ACTIVO, INACTIVO | Estado |
 
@@ -724,7 +713,7 @@ Convenciones:
 | Campo | Tipo | Ob. | Llave | Restricción | Descripción |
 |---|---|---|---|---|---|
 | `_id` (id_cliente) | int | Sí | PK | Auto | Identificador |
-| identificacion | string | Sí | Único | 5–20 | Documento |
+| identificacion | string | Sí | Único | 5 a 20 | Documento |
 | nombres / apellidos | string | Sí | | máx. 80 | Nombres y apellidos |
 | telefono / correo | string / null | No | | máx. 20 / 120 | Contacto |
 | tipo_cliente | string | Sí | | APRENDIZ, INSTRUCTOR, FUNCIONARIO, EXTERNO | Tipo |
@@ -742,7 +731,7 @@ Convenciones:
 | estado | string | Sí | Índice | PENDIENTE, EN_PREPARACION, ENTREGADO, ANULADO | Estado |
 | observaciones | string / null | No | | máx. 255 | Observaciones (está en el MER) |
 | total | decimal | Sí | | Lo calcula la API (RN01) | Total |
-| detalle[] | array | Sí | Índice `detalle.id_producto` | mínimo 1 | id_producto, cantidad (entero ≥ 1), precio_unitario, subtotal |
+| detalle[] | array | Sí | Índice `detalle.id_producto` | mínimo 1 | id_producto, cantidad (entero >= 1), precio_unitario, subtotal |
 
 **calificaciones** (bd_gastronomia_nosql)
 
@@ -767,7 +756,7 @@ Convenciones:
 | `03_jb_dcl_usuarios.py` | `03_dcl_usuarios.sql` | Crea o actualiza `jb_api_gastronomia` con `readWrite` **solo** en las dos bases de la API |
 | `04_jb_mongo_calificaciones.py` | `04_mongo_calificaciones.js` | Crea `calificaciones` con `$jsonSchema` en `bd_gastronomia_nosql` y guarda el documento de ejemplo del instructivo |
 
-**Orden de ejecución:** 01 → 02 → 04. El 03 es opcional ([F6](#f6-activar-el-usuario-con-privilegios-mínimos-opcional)). `jb_utilidades_bd.py` no se ejecuta solo: tiene las funciones que comparten los scripts 01, 02 y 04.
+**Orden de ejecución:** 01 -> 02 -> 04. El 03 es opcional ([F6](#f6-activar-el-usuario-con-privilegios-mínimos-opcional)). `jb_utilidades_bd.py` no se ejecuta solo: tiene las funciones que comparten los scripts 01, 02 y 04.
 
 Se escribieron en Python porque así no hace falta instalar `mongosh`, y la validación se define una sola vez en `app/models/jb_modelos.py`.
 
@@ -784,7 +773,7 @@ Se escribieron en Python porque así no hace falta instalar `mongosh`, y la vali
 
 ---
 
-# PARTE F — Entrega
+# PARTE F: Entrega
 
 ## F1. Regla de nombres (inicial del aprendiz)
 
@@ -798,10 +787,10 @@ El instructivo exige que archivos, variables, clases, funciones, rutas y control
 | Variables y constantes | `jb_pedido`, `jb_router`, `JB_MONGO_URI` |
 
 **Lo que no lleva prefijo, a propósito:**
-- Los nombres de los campos de datos (`id_producto`, `precio_venta`…) y las URL (`/api/v1/productos`), porque son el contrato definido en las tablas del instructivo.
+- Los nombres de los campos de datos (`id_producto`, `precio_venta`...) y las URL (`/api/v1/productos`), porque son el contrato definido en las tablas del instructivo.
 - Los `__init__.py` y las carpetas de la estructura sugerida.
 
-> Si la inicial correcta no es `jb`, hay que reemplazar `jb_` → `x_`, `Jb` → `X` y `JB_` → `X_` en todo el proyecto, incluidos los nombres de archivo.
+> Si la inicial correcta no es `jb`, hay que reemplazar `jb_` -> `x_`, `Jb` -> `X` y `JB_` -> `X_` en todo el proyecto, incluidos los nombres de archivo.
 
 ## F2. Subir a GitHub
 
@@ -823,7 +812,7 @@ El `.gitignore` ya excluye `.env`, `venv/` y `__pycache__/`. El repositorio debe
 
 **Antes de sustentar**, registre unos datos siguiendo el orden de [A5](#a5-registrar-sus-datos-la-base-empieza-vacía): un CAJERO, un producto con su receta, los insumos de esa receta con stock, un cliente y dos pedidos. Uno de los pedidos debe pedir más unidades de las que alcanza el inventario.
 
-1. **Arquitectura:** mostrar las carpetas de `app/` y explicar el recorrido router → service → repository ([D1](#d1-la-arquitectura-por-capas)).
+1. **Arquitectura:** mostrar las carpetas de `app/` y explicar el recorrido router -> service -> repository ([D1](#d1-la-arquitectura-por-capas)).
 2. **Base de datos en Compass** ([A4](#a4-ver-las-bases-de-datos-en-mongodb-compass)):
    - Las dos bases, `bd_gastronomia` y `bd_gastronomia_nosql`.
    - La pestaña **Validation** de una colección, que muestra el `$jsonSchema`.
@@ -839,8 +828,8 @@ El `.gitignore` ya excluye `.env`, `venv/` y `__pycache__/`. El repositorio debe
    - Entregar el pedido normal.
    - Consultar el stock otra vez: bajó.
    - Entregar el pedido grande: 409 y el stock no cambió.
-6. **RN05:** intentar modificar el pedido entregado → 409.
-7. **RN04:** `DELETE` del producto que ya se vendió → LOGICO.
+6. **RN05:** intentar modificar el pedido entregado -> 409.
+7. **RN04:** `DELETE` del producto que ya se vendió -> LOGICO.
 8. **RN02:** registrar una compra y ver cómo sube el stock.
 9. **MongoDB NoSQL:** calificar el pedido y consultar el promedio del producto.
 10. **Reportes:** ventas del mes y productos más vendidos.
@@ -867,7 +856,7 @@ El `.gitignore` ya excluye `.env`, `venv/` y `__pycache__/`. El repositorio debe
 
 **Respaldo automático.** Cada vez que se ejecuta el script 01 o el 04 con `--reiniciar`, la base actual se copia en `bd_gastronomia_respaldo_AAAAMMDD_HHMMSS` o `bd_gastronomia_nosql_respaldo_AAAAMMDD_HHMMSS`.
 
-> En el servidor solo están las dos bases del proyecto (`bd_gastronomia` y `bd_gastronomia_nosql`) y las internas de MongoDB (`admin`, `config` y `local`). Cada vez que use `--reiniciar` aparecerá una base `..._respaldo_...` nueva. Si no la necesita, bórrela desde Compass: clic derecho en la base → *Drop database*.
+> En el servidor solo están las dos bases del proyecto (`bd_gastronomia` y `bd_gastronomia_nosql`) y las internas de MongoDB (`admin`, `config` y `local`). Cada vez que use `--reiniciar` aparecerá una base `..._respaldo_...` nueva. Si no la necesita, bórrela desde Compass: clic derecho en la base -> *Drop database*.
 
 **Con las herramientas oficiales (`mongodump` y `mongorestore`).** Instale primero las [MongoDB Database Tools](https://www.mongodb.com/try/download/database-tools).
 
@@ -898,7 +887,7 @@ Hoy MongoDB funciona **sin autenticación**, que es lo normal en una instalació
    ```
    MONGO_URI=mongodb://jb_api_gastronomia:SU_CLAVE@localhost:27017/?authSource=bd_gastronomia
    ```
-6. ✅ La API funciona igual, pero ahora con un usuario que solo puede leer y escribir en sus dos bases.
+6. La API funciona igual, pero ahora con un usuario que solo puede leer y escribir en sus dos bases.
 
 > Los scripts con `--reiniciar` crean bases de respaldo. Para ejecutarlos con la seguridad activa use una cadena de conexión con el usuario `admin`.
 
@@ -921,7 +910,7 @@ Hoy MongoDB funciona **sin autenticación**, que es lo normal en una instalació
 
 ---
 
-# PARTE G — Solución de problemas
+# PARTE G: Solución de problemas
 
 | Síntoma | Causa | Solución |
 |---|---|---|
@@ -937,11 +926,11 @@ Hoy MongoDB funciona **sin autenticación**, que es lo normal en una instalació
 | 422 en `/insumos/stock-bajo` | Una ruta fija quedó después de `/{id}` | Ya está resuelto: las rutas fijas van primero en `jb_insumos_router.py` |
 | El script 01 o el 04 dice "ya tiene colecciones" | Protección para no borrar datos | Agregue `--reiniciar` (se guarda un respaldo antes) |
 | El script 02 termina con `DuplicateKeyError` | Ya había datos: no se ejecutó antes el 01 con `--reiniciar` | Ejecute los 3 comandos de [A3](#a3-comandos-del-día-a-día) en orden |
-| VS Code subraya los `import` en rojo | VS Code usa otro intérprete | `Ctrl+Shift+P` → *Python: Select Interpreter* → `venv` |
+| VS Code subraya los `import` en rojo | VS Code usa otro intérprete | `Ctrl+Shift+P` -> *Python: Select Interpreter* -> `venv` |
 
 ---
 
-# PARTE H — Cómo hacer cambios que pida el instructor
+# PARTE H: Cómo hacer cambios que pida el instructor
 
 Esta parte sirve para cuando el instructor diga, por ejemplo, *"agrégale un descuento"*, *"ponle un campo nuevo"* o *"haz una sección de mesas"*. Primero está el **método** que sirve para cualquier cambio. Después vienen **ejemplos completos** con el código exacto. Todos los ejemplos se probaron sobre una copia de este proyecto.
 
@@ -974,7 +963,7 @@ Los cambios se hacen **de la base de datos hacia arriba**. En cada paso pregúnt
 
 ## H3. ¿Qué archivos toco? (tabla rápida)
 
-| Si el instructor pide… | Toque | Ejemplo |
+| Si el instructor pide... | Toque | Ejemplo |
 |---|---|---|
 | Un descuento, recargo, impuesto o cálculo nuevo | Schema + service + router | [H4](#h4-ejemplo-completo-sección-de-descuento-manual-en-pedidos) |
 | Un campo nuevo en una entidad | Modelo + schema (Crear y Respuesta) + volver a crear las bases | [H5](#h5-ejemplo-agregar-un-campo-calorías-a-productos) |
@@ -982,9 +971,9 @@ Los cambios se hacen **de la base de datos hacia arriba**. En cada paso pregúnt
 | Que otro rol pueda usar un endpoint | Router | [H7](#h7-ejemplo-cambiar-los-roles-de-un-endpoint) |
 | Un estado nuevo (por ejemplo `LISTO`) | Modelo + schema + volver a crear las bases | [H8](#h8-ejemplo-agregar-un-estado-nuevo-a-los-pedidos) |
 | Una sección o recurso nuevo con su CRUD | 4 archivos nuevos + modelo + main | [H9](#h9-ejemplo-sección-nueva-con-crud-completo-mesas) |
-| Cambiar un límite (precio mínimo, longitud de un texto…) | Schema: el `Field(...)` del campo. Si quiere que la base también lo controle, el modelo y volver a crear las bases | — |
-| Cambiar un mensaje de error | El service, en el texto de `jb_dato_invalido(...)`, `jb_conflicto(...)` o `jb_no_encontrado(...)` | — |
-| Cambiar cuánto dura el token | `.env` → `JWT_MINUTOS=120`. Luego apague y encienda la API: `--reload` no vigila el `.env` | — |
+| Cambiar un límite (precio mínimo, longitud de un texto...) | Schema: el `Field(...)` del campo. Si quiere que la base también lo controle, el modelo y volver a crear las bases | - |
+| Cambiar un mensaje de error | El service, en el texto de `jb_dato_invalido(...)`, `jb_conflicto(...)` o `jb_no_encontrado(...)` | - |
+| Cambiar cuánto dura el token | `.env` -> `JWT_MINUTOS=120`. Luego apague y encienda la API: `--reload` no vigila el `.env` | - |
 
 ## H4. Ejemplo completo: sección de descuento manual en pedidos
 
@@ -998,25 +987,25 @@ Los cambios se hacen **de la base de datos hacia arriba**. En cada paso pregúnt
   ```
 - Lo pueden usar **ADMIN y CAJERO**. El porcentaje va de **0 a 50**, y **0 quita el descuento**.
 - **La API calcula los valores**, igual que en RN01 (el cajero no escribe el total):
-  - `valor_descuento = subtotal × porcentaje / 100`
-  - `total = subtotal − valor_descuento`
+  - `valor_descuento = subtotal x porcentaje / 100`
+  - `total = subtotal - valor_descuento`
 - **RN05:** un pedido ENTREGADO o ANULADO no acepta descuento y responde 409.
 - **Si después se modifica el pedido (PUT), el descuento se conserva** y se recalcula sobre el nuevo subtotal.
 - **Los reportes de ventas ya incluyen el descuento**, porque suman el campo `total`.
 
-**Archivos que se tocan** (✚ = archivo nuevo, ✎ = cambio):
+**Archivos que se tocan** (Nuevo = archivo nuevo, Cambio = archivo que ya existe):
 
 | | Archivo | Qué se hace |
 |---|---|---|
-| ✎ | `app/schemas/jb_pedido_schema.py` | La respuesta del pedido muestra el subtotal y el descuento |
-| ✚ | `app/schemas/jb_descuento_schema.py` | Qué datos recibe el descuento |
-| ✎ | `app/services/jb_pedido_service.py` | Función que calcula subtotal, descuento y total |
-| ✚ | `app/services/jb_descuento_service.py` | La regla de aplicar el descuento |
-| ✚ | `app/routers/jb_descuentos_router.py` | El endpoint (la sección "Descuentos") |
-| ✎ | `app/jb_main.py` | Registrar el router nuevo |
-| ✎ | `app/models/jb_modelos.py` | (Recomendado) que MongoDB también valide los campos nuevos |
+| Cambio | `app/schemas/jb_pedido_schema.py` | La respuesta del pedido muestra el subtotal y el descuento |
+| Nuevo | `app/schemas/jb_descuento_schema.py` | Qué datos recibe el descuento |
+| Cambio | `app/services/jb_pedido_service.py` | Función que calcula subtotal, descuento y total |
+| Nuevo | `app/services/jb_descuento_service.py` | La regla de aplicar el descuento |
+| Nuevo | `app/routers/jb_descuentos_router.py` | El endpoint (la sección "Descuentos") |
+| Cambio | `app/jb_main.py` | Registrar el router nuevo |
+| Cambio | `app/models/jb_modelos.py` | (Recomendado) que MongoDB también valide los campos nuevos |
 
-### Paso 1 — `app/schemas/jb_pedido_schema.py` ✎
+### Paso 1: `app/schemas/jb_pedido_schema.py` (cambio)
 
 **1a.** En los `import` de arriba, debajo de `from datetime import datetime`, agregue:
 ```python
@@ -1037,7 +1026,7 @@ from decimal import Decimal
 ```
 > Los campos nuevos tienen **valor por defecto** (`= None`, `= Decimal("0")`) porque los pedidos que ya existen no los tienen. Sin valor por defecto, consultar un pedido viejo daría error 500.
 
-### Paso 2 — `app/schemas/jb_descuento_schema.py` ✚ (archivo nuevo)
+### Paso 2: `app/schemas/jb_descuento_schema.py` (archivo nuevo)
 ```python
 """Esquema del descuento manual de un pedido."""
 # Decimal: números exactos para el porcentaje
@@ -1062,7 +1051,7 @@ class JbDescuentoPedido(JbModeloEntrada):
 ```
 `ge=0, le=50` significa "mayor o igual a 0 y menor o igual a 50". Si envían 60, FastAPI responde **422** sin que usted programe nada.
 
-### Paso 3 — `app/services/jb_pedido_service.py` ✎
+### Paso 3: `app/services/jb_pedido_service.py` (cambio)
 
 **3a.** Debajo de la línea `JB_ESTADOS_CERRADOS = ("ENTREGADO", "ANULADO")` agregue:
 ```python
@@ -1109,7 +1098,7 @@ y cámbielas por:
 ```
 > **¿Qué hace el `**`?** "Desempaca" el diccionario que devuelve `jb_calcular_totales`. Es como escribir a mano las cuatro líneas `"subtotal": ...`, `"porcentaje_descuento": ...`, `"valor_descuento": ...` y `"total": ...`. En `jb_actualizar` se usa el porcentaje que ya tenía el pedido, para que **el descuento no se pierda** al modificarlo.
 
-### Paso 4 — `app/services/jb_descuento_service.py` ✚ (archivo nuevo)
+### Paso 4: `app/services/jb_descuento_service.py` (archivo nuevo)
 ```python
 """Descuento manual de pedidos: el cajero escribe el porcentaje y el motivo."""
 # Decimal: números exactos para dinero
@@ -1140,7 +1129,7 @@ def jb_aplicar_descuento(jb_id_pedido: int, jb_porcentaje: Decimal, jb_motivo: s
 ```
 Este servicio **reutiliza** lo que ya existía: `jb_obtener` da el 404, `jb_validar_abierto` aplica RN05 y `jb_actualizar` del repositorio guarda. No hay que escribir consultas nuevas a MongoDB.
 
-### Paso 5 — `app/routers/jb_descuentos_router.py` ✚ (archivo nuevo)
+### Paso 5: `app/routers/jb_descuentos_router.py` (archivo nuevo)
 ```python
 """Endpoints de descuentos manuales sobre pedidos. Roles: ADMIN, CAJERO."""
 # APIRouter: agrupa endpoints; Depends: dependencias (seguridad)
@@ -1177,7 +1166,7 @@ def jb_aplicar_descuento_pedido(id_pedido: int, jb_datos: JbDescuentoPedido):
     return jb_servicio.jb_aplicar_descuento(id_pedido, jb_datos.porcentaje, jb_datos.motivo)
 ```
 
-### Paso 6 — `app/jb_main.py` ✎ (registrar la sección)
+### Paso 6: `app/jb_main.py` (cambio: registrar la sección)
 
 **6a.** En el bloque `from app.routers import (...)`, agregue `jb_descuentos_router,` debajo de `jb_compras_router,`.
 
@@ -1189,7 +1178,7 @@ def jb_aplicar_descuento_pedido(id_pedido: int, jb_datos: JbDescuentoPedido):
 ```
 > Si se le olvida el paso 6, la API arranca pero **la sección no aparece en Swagger**.
 
-### Paso 7 — `app/models/jb_modelos.py` ✎ (recomendado)
+### Paso 7: `app/models/jb_modelos.py` (cambio recomendado)
 
 En la colección `"pedidos"`, debajo de `"observaciones": jb_texto(255, True),` agregue:
 ```python
@@ -1205,7 +1194,7 @@ En la colección `"pedidos"`, debajo de `"observaciones": jb_texto(255, True),` 
 y vuelva a crear las bases con los 3 comandos de [A3](#a3-comandos-del-día-a-día) para que MongoDB use la validación nueva.
 > El descuento funciona aunque se salte este paso, porque los campos nuevos son opcionales y el `$jsonSchema` acepta campos adicionales. Con el paso 7, **la base de datos también impide** un descuento mayor a 50, aunque alguien lo intente desde Compass.
 
-### Paso 8 — Probar en Swagger
+### Paso 8: Probar en Swagger
 
 La sección **Descuentos** aparece en http://localhost:8000/docs.
 
@@ -1213,7 +1202,7 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
 
 | # | Prueba | Resultado esperado |
 |---|---|---|
-| 1 | Login como CAJERO y **Authorize** | — |
+| 1 | Login como CAJERO y **Authorize** | - |
 | 2 | `POST /pedidos` con 2 unidades del producto de 14000 y 2 del de 4000 | **201**: `subtotal` 36000, `porcentaje_descuento` 0, `total` 36000. Anote el `id_pedido` |
 | 3 | `PATCH /pedidos/{id_pedido}/descuento` con `{"porcentaje": 10, "motivo": "Descuento para aprendiz"}` | **200**: `valor_descuento` 3600, `total` 32400 |
 | 4 | `PUT /pedidos/{id_pedido}` cambiando el producto de 4000 a cantidad 1 | **200**: `subtotal` 32000, `valor_descuento` 3200, `total` 28800 (el 10 % se conservó) |
@@ -1250,7 +1239,7 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
            # Subtotal, descuento según el tipo de cliente y total (RN01)
            **jb_calcular_totales(jb_total, jb_descuento_cliente(jb_datos["id_cliente"])),
    ```
-3. ✅ Un pedido de un cliente APRENDIZ con subtotal 36000 queda con total **32400**. Uno de un cliente FUNCIONARIO no tiene descuento.
+3. Un pedido de un cliente APRENDIZ con subtotal 36000 queda con total **32400**. Uno de un cliente FUNCIONARIO no tiene descuento.
 
 ## H5. Ejemplo: agregar un campo (calorías a productos)
 
@@ -1276,9 +1265,9 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
 3. **Base de datos:** vuelva a crear las bases ([A3](#a3-comandos-del-día-a-día)).
 4. **Service, repository y router no cambian.** El router hace `jb_datos.model_dump()` y eso ya incluye `calorias`, y el repositorio guarda lo que recibe.
 5. **Pruebas:**
-   - `POST /productos` con `"calorias": 650` → 201 con `"calorias": 650`.
-   - `"calorias": -5` → 422.
-   - `GET` de un producto creado antes del cambio → `"calorias": null`.
+   - `POST /productos` con `"calorias": 650` -> 201 con `"calorias": 650`.
+   - `"calorias": -5` -> 422.
+   - `GET` de un producto creado antes del cambio -> `"calorias": null`.
 
 > **Si el campo nuevo debe ser OBLIGATORIO**, quite el `= None` y póngalo en `"required"` del modelo. Los documentos que ya existen no lo tienen: vuelva a crear las bases (sus datos quedan en el respaldo) o agrégueles el campo uno por uno en Compass.
 
@@ -1336,9 +1325,9 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
      ```
    > **¿Por qué ANTES?** FastAPI revisa las rutas en orden. Si `/{id_producto}` está primero, toma la palabra "precio" como si fuera un id, intenta convertirla en número y responde **422**.
 4. **Pruebas:**
-   - `?minimo=3000&maximo=10000` → 200 con los productos ordenados por precio.
-   - `?minimo=10000&maximo=3000` → 400.
-   - Sin parámetros → 422.
+   - `?minimo=3000&maximo=10000` -> 200 con los productos ordenados por precio.
+   - `?minimo=10000&maximo=3000` -> 400.
+   - Sin parámetros -> 422.
 
 ## H7. Ejemplo: cambiar los roles de un endpoint
 
@@ -1348,9 +1337,9 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
   `dependencies=[Depends(jb_requiere_roles("ADMIN", "CAJERO"))]`
   por
   `dependencies=[Depends(jb_requiere_roles("ADMIN", "CAJERO", "COCINERO"))]`.
-- **Para un solo endpoint**, cambie la lista `dependencies=...` de ese `@jb_router.get/post/...`. Por ejemplo, en categorías, `JB_ADMIN` → `JB_TODOS`.
+- **Para un solo endpoint**, cambie la lista `dependencies=...` de ese `@jb_router.get/post/...`. Por ejemplo, en categorías, `JB_ADMIN` -> `JB_TODOS`.
 - Actualice el texto `**Roles:** ...` del docstring, porque eso es lo que muestra Swagger, y la tabla [E2](#e2-endpoints-65).
-- ✅ Prueba: login como COCINERO → `GET /clientes` debe dar 200 (antes daba 403).
+- Prueba: login como COCINERO -> `GET /clientes` debe dar 200 (antes daba 403).
 
 ## H8. Ejemplo: agregar un estado nuevo a los pedidos
 
@@ -1365,9 +1354,9 @@ Para las pruebas necesita un cliente y dos productos: por ejemplo uno de 14000 y
    JbEstadoPedido = Literal["PENDIENTE", "EN_PREPARACION", "LISTO", "ENTREGADO", "ANULADO"]
    ```
 3. **Base de datos:** vuelva a crear las bases ([A3](#a3-comandos-del-día-a-día)). **Este paso es obligatorio**: sin él, MongoDB rechaza el valor nuevo y la API responde 400 "Los datos no cumplen la validación de la base de datos".
-4. ✅ Pruebas:
-   - `PATCH /pedidos/{id}/estado` con `{"estado": "LISTO"}` → 200.
-   - `GET /pedidos/estado/LISTO` → aparece el pedido.
+4. Pruebas:
+   - `PATCH /pedidos/{id}/estado` con `{"estado": "LISTO"}` -> 200.
+   - `GET /pedidos/estado/LISTO` -> aparece el pedido.
 
 ## H9. Ejemplo: sección nueva con CRUD completo (mesas)
 
@@ -1402,7 +1391,7 @@ Se crean **4 archivos nuevos**, uno por capa, siguiendo el molde de categorías.
     },
 ```
 
-**2. `app/schemas/jb_mesa_schema.py`** ✚
+**2. `app/schemas/jb_mesa_schema.py`** (archivo nuevo)
 ```python
 """Esquemas de las mesas del restaurante."""
 # BaseModel: clase base; ConfigDict: configuración del esquema; Field: reglas de un campo
@@ -1445,7 +1434,7 @@ class JbMesaRespuesta(BaseModel):
     estado: JbEstado
 ```
 
-**3. `app/repositories/jb_mesa_repository.py`** ✚. Hereda el CRUD completo de `JbRepositorioBase`.
+**3. `app/repositories/jb_mesa_repository.py`** (archivo nuevo). Hereda el CRUD completo de `JbRepositorioBase`.
 ```python
 """Acceso a la colección mesas."""
 # Clase con el CRUD genérico
@@ -1464,7 +1453,7 @@ class JbMesaRepository(JbRepositorioBase):
 jb_mesa_repository = JbMesaRepository()
 ```
 
-**4. `app/services/jb_mesa_service.py`** ✚
+**4. `app/services/jb_mesa_service.py`** (archivo nuevo)
 ```python
 """Reglas de negocio de las mesas."""
 # Acceso a mesas
@@ -1517,7 +1506,7 @@ def jb_eliminar(jb_id: int) -> dict:
     return jb_borrado_fisico(f"La mesa {jb_id}")
 ```
 
-**5. `app/routers/jb_mesas_router.py`** ✚
+**5. `app/routers/jb_mesas_router.py`** (archivo nuevo)
 ```python
 """Endpoints de las mesas. Roles: ADMIN (consulta: ADMIN y CAJERO)."""
 # APIRouter: agrupa endpoints; Depends: dependencias (seguridad); status: nombres de los códigos HTTP
@@ -1596,10 +1585,10 @@ def jb_eliminar_mesa(id_mesa: int):
 **7. Crear la colección en MongoDB:** vuelva a crear las bases ([A3](#a3-comandos-del-día-a-día)). El script 01 debe mostrar `[OK] mesas: validación $jsonSchema + 1 índice(s)`.
 
 **8. Pruebas:**
-- `POST /mesas` con `{"numero": 1, "capacidad": 4, "ubicacion": "Terraza"}` → 201.
-- Repetir el número → 409.
-- `"capacidad": 0` → 422.
-- El cajero hace `GET /mesas` → 200, pero `POST` → 403.
+- `POST /mesas` con `{"numero": 1, "capacidad": 4, "ubicacion": "Terraza"}` -> 201.
+- Repetir el número -> 409.
+- `"capacidad": 0` -> 422.
+- El cajero hace `GET /mesas` -> 200, pero `POST` -> 403.
 
 > **Si la mesa debe quedar ligada a los pedidos** (por ejemplo, un pedido tipo MESA guarda `id_mesa`), eso es un **campo nuevo** en pedidos: aplique [H5](#h5-ejemplo-agregar-un-campo-calorías-a-productos) y valide en `jb_pedido_service.jb_crear` que la mesa exista, igual que se valida el cliente en `jb_validar_cliente`.
 

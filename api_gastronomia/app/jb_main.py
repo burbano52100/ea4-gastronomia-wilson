@@ -47,9 +47,9 @@ Surcolombiano (CGDSS). Gestiona productos, recetas, insumos, proveedores, compra
 reportes de ventas y calificaciones de los clientes.
 
 ### Cómo probarla aquí mismo
-1. Abra **Autenticación → POST /api/v1/auth/login**, pulse *Try it out* y luego *Execute*.
+1. Abra **Autenticación -> POST /api/v1/auth/login**, pulse *Try it out* y luego *Execute*.
 2. Copie el valor de `access_token` de la respuesta.
-3. Pulse el botón **Authorize** 🔒 (arriba a la derecha), pegue el token y pulse *Authorize*.
+3. Pulse el botón **Authorize** (arriba a la derecha), pegue el token y pulse *Authorize*.
 4. Ya puede ejecutar cualquier endpoint según el rol del usuario.
 
 El usuario administrador inicial se define en `database/02_jb_dml_datos_prueba.py` (JB_ADMIN).
