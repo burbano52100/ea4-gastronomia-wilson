@@ -1,5 +1,9 @@
+# Entorno virtual de Python (cada persona crea el suyo con python -m venv venv)
 venv/
+# Archivos compilados que Python crea solo
 __pycache__/
 *.pyc
+# Credenciales reales: NUNCA se suben a GitHub (se sube .env.example)
 .env
+# Configuración personal de Visual Studio Code
 .vscode/

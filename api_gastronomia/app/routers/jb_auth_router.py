@@ -1,55 +1,76 @@
-"""Endpoints de autenticación (RF01)."""
+"""Endpoints de autenticación (RF01). /auth/login es el único endpoint público de la API."""
+# Annotated: agrega información extra a un tipo
+from typing import Annotated
+
 # APIRouter: agrupa endpoints; Depends: dependencias (seguridad); status: nombres de los códigos HTTP
 from fastapi import APIRouter, Depends, status
 
 # Respuestas de error que se documentan en Swagger
-from app.core.jb_respuestas import JB_PRIVADO, JB_R401, JB_R403, JB_R409
+from app.core.jb_respuestas import JB_PRIVADO, JB_R401, JB_R409
 # jb_requiere_roles: exige un rol; jb_usuario_actual: exige solo un token válido
 from app.core.jb_security import jb_requiere_roles, jb_usuario_actual
-# Esquemas del login (lo que entra) y del token (lo que sale)
+# Sesión de MySQL
+from app.database.jb_conexion_mysql import JbSesion
+# Modelo de la tabla usuarios
+from app.models.jb_modelos import JbUsuario
+# Esquemas del login y del token
 from app.schemas.jb_auth_schema import JbLogin, JbToken
-# Esquemas de usuario para el registro y el perfil
+# Esquemas de usuarios
 from app.schemas.jb_usuario_schema import JbUsuarioCrear, JbUsuarioRespuesta
-# Servicios con la lógica del login y de los usuarios
+# Servicios de autenticación y de usuarios
 from app.services import jb_auth_service, jb_usuario_service
 
-# Router de autenticación: todas sus rutas empiezan por /auth y salen en la sección "Autenticación"
+# Router: rutas /auth, sección "Autenticación" de Swagger
 jb_router = APIRouter(prefix="/auth", tags=["Autenticación"])
+# Dependencia que solo deja pasar al rol ADMIN
+jb_solo_admin = jb_requiere_roles("ADMIN")
 
 
-# POST /api/v1/auth/login. response_model: forma de la respuesta; summary: título en Swagger;
-# responses: errores que se documentan. No tiene dependencias de seguridad: es el único endpoint público.
-@jb_router.post("/login", response_model=JbToken, summary="Iniciar sesión (único endpoint público)",
-                responses={**JB_R401, **JB_R403})
-# Función que atiende la petición; FastAPI valida el cuerpo con JbLogin (si falla responde 422)
-def jb_login(jb_datos: JbLogin):
-    """Recibe correo y contraseña. Si son correctos devuelve un **token JWT** con el rol del usuario.
+# POST /api/v1/auth/login: único endpoint público
+@jb_router.post("/login", response_model=JbToken, summary="Iniciar sesión", responses=JB_R401)
+# El cuerpo se valida con JbLogin; la sesión de MySQL la entrega FastAPI
+def jb_login(jb_datos: JbLogin, jb_sesion: JbSesion):
+    """Recibe correo y contraseña y devuelve un token JWT que lleva el rol del usuario (RF01).
 
-    Copie el `access_token` y péguelo en el botón **Authorize** (arriba a la derecha).
+    Copie el `access_token` y péguelo en el botón **Authorize** de Swagger (o en el encabezado
+    `Authorization: Bearer <token>` de Thunder Client). **Es el único endpoint público.**
     """
-    # Le pasa correo y contraseña al servicio, que devuelve el token
-    return jb_auth_service.jb_iniciar_sesion(jb_datos.correo, jb_datos.password)
+    # Pide al servicio que verifique las credenciales y cree el token
+    return jb_auth_service.jb_iniciar_sesion(jb_sesion, jb_datos.correo, jb_datos.password)
 
 
-# POST /api/v1/auth/registro: responde 201 (creado); solo el ADMIN puede usarlo
-@jb_router.post("/registro", response_model=JbUsuarioRespuesta, status_code=status.HTTP_201_CREATED,
-                summary="Registrar un usuario", responses={**JB_PRIVADO, **JB_R409},
-                dependencies=[Depends(jb_requiere_roles("ADMIN"))])
-# Recibe los datos del usuario validados con JbUsuarioCrear
-def jb_registro(jb_datos: JbUsuarioCrear):
-    """Crea un usuario con su rol. La contraseña se guarda cifrada con bcrypt (RN06).
+# POST /api/v1/auth/registro: crea un usuario (solo ADMIN)
+@jb_router.post(
+    # Ruta
+    "/registro",
+    # Forma de la respuesta (sin contraseña)
+    response_model=JbUsuarioRespuesta,
+    # 201: se creó un registro
+    status_code=status.HTTP_201_CREATED,
+    # Solo ADMIN
+    dependencies=[Depends(jb_solo_admin)],
+    # Título en Swagger
+    summary="Registrar un usuario",
+    # Errores posibles
+    responses={**JB_PRIVADO, **JB_R409},
+)
+# Recibe el cuerpo JSON ya validado y la sesión de MySQL
+def jb_registro(jb_datos: JbUsuarioCrear, jb_sesion: JbSesion):
+    """Registra un usuario con su rol. La contraseña se guarda cifrada con bcrypt (RN06).
 
     **Roles:** ADMIN.
     """
-    # model_dump convierte el esquema en diccionario; el servicio cifra la contraseña y lo guarda
-    return jb_usuario_service.jb_crear(jb_datos.model_dump())
+    # Usa el mismo servicio que POST /usuarios
+    return jb_usuario_service.jb_crear(jb_sesion, jb_datos.model_dump())
 
 
-# GET /api/v1/auth/perfil: cualquier usuario con token válido
-@jb_router.get("/perfil", response_model=JbUsuarioRespuesta, summary="Datos del usuario autenticado",
-               responses=JB_R401)
-# Depends(jb_usuario_actual) lee el token y entrega {"id_usuario", "rol"} (401 si no hay token)
-def jb_perfil(jb_usuario: dict = Depends(jb_usuario_actual)):
-    """Devuelve los datos del dueño del token. **Roles:** todos."""
-    # Busca y devuelve el usuario del token
-    return jb_usuario_service.jb_obtener(jb_usuario["id_usuario"])
+# GET /api/v1/auth/perfil: datos del usuario del token
+@jb_router.get("/perfil", response_model=JbUsuarioRespuesta, summary="Mi perfil", responses=JB_R401)
+# FastAPI entrega el usuario que obtuvo jb_usuario_actual a partir del token
+def jb_perfil(jb_usuario: Annotated[JbUsuario, Depends(jb_usuario_actual)]):
+    """Devuelve los datos del usuario autenticado (nunca la contraseña).
+
+    **Roles:** cualquier usuario con token.
+    """
+    # El usuario ya viene validado por la dependencia
+    return jb_usuario

@@ -1,376 +1,361 @@
-"""Modelos de las colecciones de MongoDB.
+"""Modelos de las tablas de MySQL (bd_gastronomia) con SQLAlchemy.
 
-En SQL el modelo de cada tabla se crea con CREATE TABLE (tipos, NOT NULL, CHECK, UNIQUE).
-En MongoDB se define con una validación $jsonSchema (campos obligatorios, tipos, tamaños,
-valores permitidos y mínimos) más los índices. Los scripts de la carpeta database/ usan
-estas definiciones para crear las colecciones.
+Cada clase representa una tabla que crea database/01_jb_ddl_bd_gastronomia.sql.
+Las tablas las crea ese script, no este archivo: aquí solo se describen para trabajar con ellas desde Python.
+Las propiedades (@property) son datos calculados que la API incluye en sus respuestas.
 """
+# date: solo fecha; datetime: fecha y hora
+from datetime import date, datetime
+# Decimal: números exactos para dinero y cantidades
+from decimal import Decimal
 
-# Regla para los ids: número entero (int o long) desde 1, como INT PK o INT FK en SQL
-JB_ENTERO = {"bsonType": ["int", "long"], "minimum": 1}
-# Regla para las fechas: tipo fecha de MongoDB, como DATETIME en SQL
-JB_FECHA = {"bsonType": "date"}
-# Regla para el estado: solo se permiten estos dos valores, como un ENUM en SQL
-JB_ESTADO = {"enum": ["ACTIVO", "INACTIVO"]}
-# Regla para las calificaciones: entero del 1 al 5
-JB_CALIFICACION = {"bsonType": ["int", "long"], "minimum": 1, "maximum": 5}
-# Regla para los correos: texto de máximo 120 caracteres con la forma algo@algo.algo
-JB_CORREO = {"bsonType": "string", "maxLength": 120, "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"}
+# Tipos de columna y llave foránea de SQLAlchemy
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, Text
+# Mapped: tipo de un atributo; mapped_column: define una columna; relationship: relación con otra tabla
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
-# Función que arma la regla de un texto con tamaño máximo, como VARCHAR(n)
-def jb_texto(jb_maximo: int, jb_opcional: bool = False) -> dict:
-    # Si es opcional acepta texto o null (NULL en SQL); si no, solo texto (NOT NULL)
-    return {"bsonType": ["string", "null"] if jb_opcional else "string", "maxLength": jb_maximo}
+# Fecha de hoy en Colombia (para los días que le faltan a un insumo para vencer)
+from app.core.jb_utilidades import jb_hoy
+# Clase base de los modelos
+from app.database.jb_conexion_mysql import JbBase
 
 
-# Función que arma la regla de un número decimal, como DECIMAL con CHECK
-def jb_decimal(jb_mayor_que_cero: bool = False) -> dict:
-    """Decimal128 >= 0, o > 0 cuando jb_mayor_que_cero es True (equivale a un CHECK)."""
-    # Por defecto: decimal mayor o igual a 0
-    jb_regla = {"bsonType": "decimal", "minimum": 0}
-    # Si se pide mayor que cero...
-    if jb_mayor_que_cero:
-        # ...el mínimo se vuelve exclusivo: el 0 ya no se acepta
-        jb_regla["exclusiveMinimum"] = True
-    # Devuelve la regla armada
-    return jb_regla
+# Tabla usuarios
+class JbUsuario(JbBase):
+    """Usuarios del sistema y su rol (RF01, RF02)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "usuarios"
+    # Llave primaria autoincremental
+    id_usuario: Mapped[int] = mapped_column(primary_key=True)
+    # Documento de identidad (único)
+    identificacion: Mapped[str] = mapped_column(String(20))
+    # Nombres
+    nombres: Mapped[str] = mapped_column(String(80))
+    # Apellidos
+    apellidos: Mapped[str] = mapped_column(String(80))
+    # Correo para iniciar sesión (único)
+    correo: Mapped[str] = mapped_column(String(120))
+    # Hash bcrypt de la contraseña (RN06): ningún esquema de respuesta lo incluye
+    password: Mapped[str] = mapped_column(String(255))
+    # ADMIN, CAJERO o COCINERO
+    rol: Mapped[str] = mapped_column(Enum("ADMIN", "CAJERO", "COCINERO"))
+    # ACTIVO o INACTIVO
+    estado: Mapped[str] = mapped_column(Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
 
 
-# Función que arma la regla de un documento: qué campos son obligatorios y la regla de cada campo
-def jb_objeto(jb_obligatorios: list[str], jb_propiedades: dict) -> dict:
-    # "required" equivale a NOT NULL; "properties" tiene la regla de cada campo
-    return {"bsonType": "object", "required": jb_obligatorios, "properties": jb_propiedades}
+# Tabla categorias
+class JbCategoria(JbBase):
+    """Categorías de productos (RF03)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "categorias"
+    # Llave primaria
+    id_categoria: Mapped[int] = mapped_column(primary_key=True)
+    # Nombre (único)
+    nombre: Mapped[str] = mapped_column(String(60))
+    # Descripción opcional
+    descripcion: Mapped[str | None] = mapped_column(String(200))
+    # ACTIVO o INACTIVO
+    estado: Mapped[str] = mapped_column(Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
 
 
-# Cada modelo tiene su esquema de validación y sus índices: ([campos], es_unico)
-JB_MODELOS = {
-    # Colección usuarios (tabla usuarios del instructivo)
-    "usuarios": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "identificacion", "nombres", "apellidos", "correo", "password", "rol", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Documento de identidad, máximo 20 caracteres
-                "identificacion": jb_texto(20),
-                # Nombres, máximo 80 caracteres
-                "nombres": jb_texto(80),
-                # Apellidos, máximo 80 caracteres
-                "apellidos": jb_texto(80),
-                # Correo con formato válido
-                "correo": JB_CORREO,
-                # Hash bcrypt de la contraseña (RN06)
-                "password": jb_texto(255),
-                # Rol: solo uno de estos tres
-                "rol": {"enum": ["ADMIN", "CAJERO", "COCINERO"]},
-                # ACTIVO o INACTIVO
-                "estado": JB_ESTADO,
-            },
-        ),
-        # Índices únicos: no se repiten el correo ni la identificación (UNIQUE)
-        "indices": [(["correo"], True), (["identificacion"], True)],
-    },
-    # Colección categorias
-    "categorias": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "nombre", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Nombre de la categoría, máximo 60 caracteres
-                "nombre": jb_texto(60),
-                # Descripción opcional, máximo 200 caracteres
-                "descripcion": jb_texto(200, True),
-                # ACTIVO o INACTIVO
-                "estado": JB_ESTADO,
-            },
-        ),
-        # El nombre no se repite
-        "indices": [(["nombre"], True)],
-    },
-    # Colección productos
-    "productos": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "codigo", "nombre", "precio_venta", "unidad_venta", "id_categoria", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Código interno, máximo 20 caracteres
-                "codigo": jb_texto(20),
-                # Nombre, máximo 100 caracteres
-                "nombre": jb_texto(100),
-                # Descripción opcional sin límite de tamaño (TEXT en SQL)
-                "descripcion": {"bsonType": ["string", "null"]},
-                # Precio mayor que 0, como CHECK (precio_venta > 0)
-                "precio_venta": jb_decimal(jb_mayor_que_cero=True),
-                # Porción, unidad, vaso..., máximo 20 caracteres
-                "unidad_venta": jb_texto(20),
-                # Categoría a la que pertenece (FK hacia categorias)
-                "id_categoria": JB_ENTERO,
-                # Estado del producto: solo uno de estos tres
-                "estado": {"enum": ["DISPONIBLE", "AGOTADO", "INACTIVO"]},
-            },
-        ),
-        # El código no se repite; índice normal en id_categoria para buscar rápido por categoría
-        "indices": [(["codigo"], True), (["id_categoria"], False)],
-    },
-    # Colección insumos (inventario)
-    "insumos": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "nombre", "unidad_medida", "stock_actual", "stock_minimo", "costo_unitario", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Nombre, máximo 100 caracteres
-                "nombre": jb_texto(100),
-                # Unidad de medida: solo una de estas
-                "unidad_medida": {"enum": ["g", "kg", "ml", "l", "lb", "unidad"]},
-                # Existencias, mayor o igual a 0
-                "stock_actual": jb_decimal(),
-                # Nivel mínimo de alerta, mayor o igual a 0
-                "stock_minimo": jb_decimal(),
-                # Costo por unidad de medida, mayor o igual a 0
-                "costo_unitario": jb_decimal(),
-                # Fecha de vencimiento del lote actual, o null si no vence
-                "fecha_vencimiento": {"bsonType": ["date", "null"]},
-                # ACTIVO o INACTIVO
-                "estado": JB_ESTADO,
-            },
-        ),
-        # El nombre no se repite; índice en fecha_vencimiento para la consulta "por vencer"
-        "indices": [(["nombre"], True), (["fecha_vencimiento"], False)],
-    },
-    # Colección recetas (relación N:M entre productos e insumos)
-    "recetas": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "id_producto", "id_insumo", "cantidad"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Producto (FK hacia productos)
-                "id_producto": JB_ENTERO,
-                # Insumo que usa (FK hacia insumos)
-                "id_insumo": JB_ENTERO,
-                # Cantidad del insumo por unidad de producto, mayor que 0
-                "cantidad": jb_decimal(jb_mayor_que_cero=True),
-            },
-        ),
-        # Un insumo aparece una sola vez en la receta de un producto; índice en id_insumo para buscar sus usos
-        "indices": [(["id_producto", "id_insumo"], True), (["id_insumo"], False)],
-    },
-    # Colección proveedores
-    "proveedores": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "nit", "razon_social", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # NIT o documento, máximo 20 caracteres
-                "nit": jb_texto(20),
-                # Nombre o razón social, máximo 120 caracteres
-                "razon_social": jb_texto(120),
-                # Teléfono opcional, máximo 20 caracteres
-                "telefono": jb_texto(20, True),
-                # Correo opcional: copia la regla de correo pero acepta también null
-                "correo": {**JB_CORREO, "bsonType": ["string", "null"]},
-                # Dirección opcional, máximo 150 caracteres
-                "direccion": jb_texto(150, True),
-                # ACTIVO o INACTIVO
-                "estado": JB_ESTADO,
-            },
-        ),
-        # El NIT no se repite
-        "indices": [(["nit"], True)],
-    },
-    # Colección compras (con el detalle_compra guardado dentro de cada compra)
-    "compras": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "numero_factura", "fecha_compra", "id_proveedor", "id_usuario", "total", "detalle"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Número de la factura del proveedor, máximo 30 caracteres
-                "numero_factura": jb_texto(30),
-                # Fecha y hora de la compra
-                "fecha_compra": JB_FECHA,
-                # Proveedor (FK hacia proveedores)
-                "id_proveedor": JB_ENTERO,
-                # Usuario que registró la compra (FK hacia usuarios)
-                "id_usuario": JB_ENTERO,
-                # Valor total, mayor o igual a 0
-                "total": jb_decimal(),
-                # Detalle de la compra: una lista de ítems
-                "detalle": {
-                    # Debe ser una lista
-                    "bsonType": "array",
-                    # Con al menos un ítem
-                    "minItems": 1,
-                    # Regla de cada ítem de la lista
-                    "items": jb_objeto(
-                        # Campos obligatorios de cada ítem
-                        ["id_insumo", "cantidad", "costo_unitario", "subtotal"],
-                        # Regla de cada campo del ítem
-                        {
-                            # Insumo comprado (FK hacia insumos)
-                            "id_insumo": JB_ENTERO,
-                            # Cantidad comprada, mayor que 0
-                            "cantidad": jb_decimal(jb_mayor_que_cero=True),
-                            # Costo por unidad, mayor o igual a 0
-                            "costo_unitario": jb_decimal(),
-                            # cantidad x costo_unitario, mayor o igual a 0
-                            "subtotal": jb_decimal(),
-                        },
-                    ),
-                },
-            },
-        ),
-        # Un proveedor no repite número de factura; índices para buscar por fecha y por insumo comprado
-        "indices": [(["id_proveedor", "numero_factura"], True), (["fecha_compra"], False), (["detalle.id_insumo"], False)],
-    },
-    # Colección clientes
-    "clientes": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "identificacion", "nombres", "apellidos", "tipo_cliente", "estado"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Documento de identidad, máximo 20 caracteres
-                "identificacion": jb_texto(20),
-                # Nombres, máximo 80 caracteres
-                "nombres": jb_texto(80),
-                # Apellidos, máximo 80 caracteres
-                "apellidos": jb_texto(80),
-                # Teléfono opcional, máximo 20 caracteres
-                "telefono": jb_texto(20, True),
-                # Correo opcional: copia la regla de correo pero acepta también null
-                "correo": {**JB_CORREO, "bsonType": ["string", "null"]},
-                # Tipo de cliente: solo uno de estos cuatro
-                "tipo_cliente": {"enum": ["APRENDIZ", "INSTRUCTOR", "FUNCIONARIO", "EXTERNO"]},
-                # ACTIVO o INACTIVO (agregado para cumplir RN04)
-                "estado": JB_ESTADO,
-            },
-        ),
-        # La identificación no se repite
-        "indices": [(["identificacion"], True)],
-    },
-    # Colección pedidos (con el detalle_pedido guardado dentro de cada pedido)
-    "pedidos": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "fecha_pedido", "id_cliente", "id_usuario", "tipo_pedido", "estado", "total", "detalle"],
-            # Regla de cada campo
-            {
-                # Identificador numérico (PK)
-                "_id": JB_ENTERO,
-                # Fecha y hora del pedido
-                "fecha_pedido": JB_FECHA,
-                # Cliente que pide (FK hacia clientes)
-                "id_cliente": JB_ENTERO,
-                # Usuario que registró el pedido (FK hacia usuarios)
-                "id_usuario": JB_ENTERO,
-                # Tipo de pedido: solo uno de estos tres
-                "tipo_pedido": {"enum": ["MESA", "PARA_LLEVAR", "EVENTO"]},
-                # Estado del pedido: solo uno de estos cuatro
-                "estado": {"enum": ["PENDIENTE", "EN_PREPARACION", "ENTREGADO", "ANULADO"]},
-                # Observaciones opcionales, máximo 255 caracteres
-                "observaciones": jb_texto(255, True),
-                # Total calculado por la API (RN01), mayor o igual a 0
-                "total": jb_decimal(),
-                # Detalle del pedido: una lista de ítems
-                "detalle": {
-                    # Debe ser una lista
-                    "bsonType": "array",
-                    # Con al menos un ítem
-                    "minItems": 1,
-                    # Regla de cada ítem de la lista
-                    "items": jb_objeto(
-                        # Campos obligatorios de cada ítem
-                        ["id_producto", "cantidad", "precio_unitario", "subtotal"],
-                        # Regla de cada campo del ítem
-                        {
-                            # Producto pedido (FK hacia productos)
-                            "id_producto": JB_ENTERO,
-                            # Cantidad: entero desde 1
-                            "cantidad": JB_ENTERO,
-                            # Precio del producto al momento del pedido
-                            "precio_unitario": jb_decimal(),
-                            # cantidad x precio_unitario (RN01)
-                            "subtotal": jb_decimal(),
-                        },
-                    ),
-                },
-            },
-        ),
-        # Índices para buscar rápido por fecha (reportes), estado, cliente y producto vendido
-        "indices": [(["fecha_pedido"], False), (["estado"], False), (["id_cliente"], False), (["detalle.id_producto"], False)],
-    },
-}
+# Tabla insumos
+class JbInsumo(JbBase):
+    """Insumos del inventario (RF07)."""
 
-# Base de datos NoSQL: información no estructurada (opiniones de los clientes).
-JB_MODELOS_NOSQL = {
-    # Colección calificaciones (en bd_gastronomia_nosql)
-    "calificaciones": {
-        # Validación de cada documento
-        "esquema": jb_objeto(
-            # Campos obligatorios
-            ["_id", "id_pedido", "id_cliente", "fecha", "calificacion_servicio", "productos"],
-            # Regla de cada campo
-            {
-                # Identificador numérico
-                "_id": JB_ENTERO,
-                # Pedido calificado (está en la otra base)
-                "id_pedido": JB_ENTERO,
-                # Cliente que califica (está en la otra base)
-                "id_cliente": JB_ENTERO,
-                # Fecha y hora de la calificación
-                "fecha": JB_FECHA,
-                # Calificación del servicio, de 1 a 5
-                "calificacion_servicio": JB_CALIFICACION,
-                # Comentario opcional, máximo 500 caracteres
-                "comentario": jb_texto(500, True),
-                # Calificación de cada producto del pedido: una lista
-                "productos": {
-                    # Debe ser una lista
-                    "bsonType": "array",
-                    # Con al menos un producto
-                    "minItems": 1,
-                    # Regla de cada producto calificado
-                    "items": jb_objeto(
-                        # Campos obligatorios de cada producto calificado
-                        ["id_producto", "nombre", "calificacion"],
-                        # Id del producto, su nombre y su calificación de 1 a 5
-                        {"id_producto": JB_ENTERO, "nombre": jb_texto(100), "calificacion": JB_CALIFICACION},
-                    ),
-                },
-            },
-        ),
-        # Un pedido se califica una sola vez; índices para buscar por cliente y por producto
-        "indices": [(["id_pedido"], True), (["id_cliente"], False), (["productos.id_producto"], False)],
-    },
-}
+    # Nombre de la tabla en MySQL
+    __tablename__ = "insumos"
+    # Llave primaria
+    id_insumo: Mapped[int] = mapped_column(primary_key=True)
+    # Nombre (único)
+    nombre: Mapped[str] = mapped_column(String(100))
+    # g, kg, ml, l, lb o unidad
+    unidad_medida: Mapped[str] = mapped_column(Enum("g", "kg", "ml", "l", "lb", "unidad"))
+    # Existencias actuales (3 decimales)
+    stock_actual: Mapped[Decimal] = mapped_column(Numeric(10, 3), default=Decimal("0"))
+    # Nivel mínimo de alerta
+    stock_minimo: Mapped[Decimal] = mapped_column(Numeric(10, 3), default=Decimal("0"))
+    # Costo por unidad de medida
+    costo_unitario: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0"))
+    # Vencimiento del lote actual (puede ser nulo)
+    fecha_vencimiento: Mapped[date | None] = mapped_column(Date)
+    # ACTIVO o INACTIVO
+    estado: Mapped[str] = mapped_column(Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
+
+    # Dato calculado: cuánto falta para llegar al stock mínimo (0 si no falta nada)
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def faltante(self) -> Decimal:
+        # Si el stock actual ya llega al mínimo, no falta nada
+        return max(self.stock_minimo - self.stock_actual, Decimal("0"))
+
+    # Dato calculado: días que le quedan antes de vencer (None si no tiene fecha)
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def dias_restantes(self) -> int | None:
+        # Sin fecha de vencimiento no hay días que contar
+        if self.fecha_vencimiento is None:
+            # Devuelve None (en la respuesta JSON se ve como null)
+            return None
+        # Resta la fecha de hoy a la de vencimiento y toma los días
+        return (self.fecha_vencimiento - jb_hoy()).days
+
+
+# Tabla proveedores
+class JbProveedor(JbBase):
+    """Proveedores de insumos (RF08)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "proveedores"
+    # Llave primaria
+    id_proveedor: Mapped[int] = mapped_column(primary_key=True)
+    # NIT o documento (único)
+    nit: Mapped[str] = mapped_column(String(20))
+    # Nombre o razón social
+    razon_social: Mapped[str] = mapped_column(String(120))
+    # Teléfono (opcional)
+    telefono: Mapped[str | None] = mapped_column(String(20))
+    # Correo (opcional)
+    correo: Mapped[str | None] = mapped_column(String(120))
+    # Dirección (opcional)
+    direccion: Mapped[str | None] = mapped_column(String(150))
+    # ACTIVO o INACTIVO
+    estado: Mapped[str] = mapped_column(Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
+
+
+# Tabla clientes
+class JbCliente(JbBase):
+    """Clientes por tipo (RF09)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "clientes"
+    # Llave primaria
+    id_cliente: Mapped[int] = mapped_column(primary_key=True)
+    # Documento (único)
+    identificacion: Mapped[str] = mapped_column(String(20))
+    # Nombres
+    nombres: Mapped[str] = mapped_column(String(80))
+    # Apellidos
+    apellidos: Mapped[str] = mapped_column(String(80))
+    # Teléfono (opcional)
+    telefono: Mapped[str | None] = mapped_column(String(20))
+    # Correo (opcional)
+    correo: Mapped[str | None] = mapped_column(String(120))
+    # APRENDIZ, INSTRUCTOR, FUNCIONARIO o EXTERNO
+    tipo_cliente: Mapped[str] = mapped_column(Enum("APRENDIZ", "INSTRUCTOR", "FUNCIONARIO", "EXTERNO"))
+    # ACTIVO o INACTIVO (campo agregado por RN04)
+    estado: Mapped[str] = mapped_column(Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
+
+
+# Tabla productos
+class JbProducto(JbBase):
+    """Productos que se venden (RF04)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "productos"
+    # Llave primaria
+    id_producto: Mapped[int] = mapped_column(primary_key=True)
+    # Código interno (único)
+    codigo: Mapped[str] = mapped_column(String(20))
+    # Nombre
+    nombre: Mapped[str] = mapped_column(String(100))
+    # Descripción opcional
+    descripcion: Mapped[str | None] = mapped_column(Text)
+    # Precio de venta
+    precio_venta: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Porción, unidad, libra, vaso...
+    unidad_venta: Mapped[str] = mapped_column(String(20))
+    # Llave foránea a categorias
+    id_categoria: Mapped[int] = mapped_column(ForeignKey("categorias.id_categoria"))
+    # DISPONIBLE, AGOTADO o INACTIVO
+    estado: Mapped[str] = mapped_column(Enum("DISPONIBLE", "AGOTADO", "INACTIVO"), default="DISPONIBLE")
+    # Categoría del producto; selectin la carga en una consulta aparte
+    categoria: Mapped[JbCategoria] = relationship(lazy="selectin")
+
+    # Dato calculado: nombre de la categoría, para mostrarlo en las respuestas
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_categoria(self) -> str | None:
+        # Si la categoría está cargada devuelve su nombre
+        return self.categoria.nombre if self.categoria else None
+
+
+# Tabla recetas
+class JbReceta(JbBase):
+    """Ficha técnica: cantidad de cada insumo por unidad de producto (RF05)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "recetas"
+    # Llave primaria
+    id_receta: Mapped[int] = mapped_column(primary_key=True)
+    # Llave foránea a productos
+    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto"))
+    # Llave foránea a insumos
+    id_insumo: Mapped[int] = mapped_column(ForeignKey("insumos.id_insumo"))
+    # Cantidad del insumo por cada unidad del producto (3 decimales)
+    cantidad: Mapped[Decimal] = mapped_column(Numeric(10, 3))
+    # Producto de la receta
+    producto: Mapped[JbProducto] = relationship(lazy="selectin")
+    # Insumo de la receta
+    insumo: Mapped[JbInsumo] = relationship(lazy="selectin")
+
+    # Dato calculado: nombre del producto
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_producto(self) -> str:
+        # Toma el nombre del producto relacionado
+        return self.producto.nombre
+
+    # Dato calculado: nombre del insumo
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_insumo(self) -> str:
+        # Toma el nombre del insumo relacionado
+        return self.insumo.nombre
+
+    # Dato calculado: unidad de medida del insumo
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def unidad_medida(self) -> str:
+        # Toma la unidad del insumo relacionado
+        return self.insumo.unidad_medida
+
+
+# Tabla detalle_compra (va antes de compras porque compras la usa en su relación)
+class JbDetalleCompra(JbBase):
+    """Ítems de una compra (RF08)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "detalle_compra"
+    # Llave primaria
+    id_detalle_compra: Mapped[int] = mapped_column(primary_key=True)
+    # Llave foránea a compras
+    id_compra: Mapped[int] = mapped_column(ForeignKey("compras.id_compra"))
+    # Llave foránea a insumos
+    id_insumo: Mapped[int] = mapped_column(ForeignKey("insumos.id_insumo"))
+    # Cantidad comprada
+    cantidad: Mapped[Decimal] = mapped_column(Numeric(10, 3))
+    # Costo por unidad en esta compra
+    costo_unitario: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # cantidad x costo_unitario
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # Insumo comprado
+    insumo: Mapped[JbInsumo] = relationship(lazy="selectin")
+
+    # Dato calculado: nombre del insumo
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_insumo(self) -> str:
+        # Toma el nombre del insumo relacionado
+        return self.insumo.nombre
+
+
+# Tabla compras
+class JbCompra(JbBase):
+    """Compras de insumos a un proveedor (RF08, RN02)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "compras"
+    # Llave primaria
+    id_compra: Mapped[int] = mapped_column(primary_key=True)
+    # Número de la factura del proveedor
+    numero_factura: Mapped[str] = mapped_column(String(30))
+    # Fecha y hora de la compra
+    fecha_compra: Mapped[datetime] = mapped_column(DateTime)
+    # Llave foránea a proveedores
+    id_proveedor: Mapped[int] = mapped_column(ForeignKey("proveedores.id_proveedor"))
+    # Llave foránea a usuarios: quién registró la compra
+    id_usuario: Mapped[int] = mapped_column(ForeignKey("usuarios.id_usuario"))
+    # Suma de los subtotales
+    total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    # Proveedor de la compra
+    proveedor: Mapped[JbProveedor] = relationship(lazy="selectin")
+    # Ítems de la compra; delete-orphan: un ítem que se quita de la lista se borra de la tabla
+    detalle: Mapped[list[JbDetalleCompra]] = relationship(
+        # Se cargan en una consulta aparte, ordenados por su id
+        lazy="selectin", order_by=JbDetalleCompra.id_detalle_compra,
+        # Guardar o borrar la compra guarda o borra también sus ítems
+        cascade="all, delete-orphan",
+    )
+
+    # Dato calculado: razón social del proveedor
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_proveedor(self) -> str:
+        # Toma la razón social del proveedor relacionado
+        return self.proveedor.razon_social
+
+
+# Tabla detalle_pedido (va antes de pedidos porque pedidos la usa en su relación)
+class JbDetallePedido(JbBase):
+    """Ítems de un pedido (RF10, RN01)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "detalle_pedido"
+    # Llave primaria
+    id_detalle: Mapped[int] = mapped_column(primary_key=True)
+    # Llave foránea a pedidos
+    id_pedido: Mapped[int] = mapped_column(ForeignKey("pedidos.id_pedido"))
+    # Llave foránea a productos
+    id_producto: Mapped[int] = mapped_column(ForeignKey("productos.id_producto"))
+    # Cantidad pedida (2 decimales)
+    cantidad: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Precio del producto al momento del pedido (lo pone la API)
+    precio_unitario: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # cantidad x precio_unitario (lo calcula la API)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    # Producto pedido
+    producto: Mapped[JbProducto] = relationship(lazy="selectin")
+
+    # Dato calculado: nombre del producto
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_producto(self) -> str:
+        # Toma el nombre del producto relacionado
+        return self.producto.nombre
+
+
+# Tabla pedidos
+class JbPedido(JbBase):
+    """Pedidos de los clientes (RF10, RN01, RN03, RN05)."""
+
+    # Nombre de la tabla en MySQL
+    __tablename__ = "pedidos"
+    # Llave primaria
+    id_pedido: Mapped[int] = mapped_column(primary_key=True)
+    # Fecha y hora del pedido
+    fecha_pedido: Mapped[datetime] = mapped_column(DateTime)
+    # Llave foránea a clientes
+    id_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.id_cliente"))
+    # Llave foránea a usuarios: quién registró el pedido
+    id_usuario: Mapped[int] = mapped_column(ForeignKey("usuarios.id_usuario"))
+    # MESA, PARA_LLEVAR o EVENTO
+    tipo_pedido: Mapped[str] = mapped_column(Enum("MESA", "PARA_LLEVAR", "EVENTO"))
+    # PENDIENTE, EN_PREPARACION, ENTREGADO o ANULADO
+    estado: Mapped[str] = mapped_column(
+        # Valores permitidos del ENUM
+        Enum("PENDIENTE", "EN_PREPARACION", "ENTREGADO", "ANULADO"),
+        # Todo pedido nuevo empieza PENDIENTE
+        default="PENDIENTE",
+    )
+    # Suma de los subtotales (RN01)
+    total: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+    # Notas del pedido (opcional)
+    observaciones: Mapped[str | None] = mapped_column(String(255))
+    # Cliente del pedido
+    cliente: Mapped[JbCliente] = relationship(lazy="selectin")
+    # Ítems del pedido; delete-orphan: un ítem que se quita de la lista se borra de la tabla
+    detalle: Mapped[list[JbDetallePedido]] = relationship(
+        # Se cargan en una consulta aparte, ordenados por su id
+        lazy="selectin", order_by=JbDetallePedido.id_detalle,
+        # Guardar el pedido guarda también sus ítems
+        cascade="all, delete-orphan",
+    )
+
+    # Dato calculado: nombre completo del cliente
+    @property
+    # Con @property se lee como un dato, sin paréntesis (por ejemplo jb_producto.nombre_categoria)
+    def nombre_cliente(self) -> str:
+        # Une nombres y apellidos del cliente relacionado
+        return f"{self.cliente.nombres} {self.cliente.apellidos}"

@@ -1,67 +1,65 @@
-"""Consultas de reportes con el framework de agregación de MongoDB.
-
-$match = WHERE, $group = GROUP BY, $sort = ORDER BY, $limit = LIMIT, $lookup = JOIN.
-"""
+"""Consultas de los reportes de ventas (RF11). Solo cuentan los pedidos ENTREGADO."""
 # datetime: fecha y hora
 from datetime import datetime
+# Decimal: números exactos
+from decimal import Decimal
 
-# jb_db: la base principal
-from app.database.jb_conexion_mongo import jb_db
+# func: funciones de SQL como COUNT y SUM; select: arma un SELECT
+from sqlalchemy import func, select
+# Session: sesión de trabajo con la base de datos
+from sqlalchemy.orm import Session
 
-
-# Reporte de ventas por rango de fechas (RF11)
-def jb_ventas(jb_desde: datetime, jb_hasta: datetime) -> dict | None:
-    """Total vendido y número de pedidos ENTREGADOS en un rango de fechas."""
-    # aggregate ejecuta las etapas en orden sobre la colección pedidos
-    jb_resultado = list(jb_db.pedidos.aggregate([
-        # $match: solo pedidos ENTREGADOS con fecha entre desde y hasta (WHERE)
-        {"$match": {"estado": "ENTREGADO", "fecha_pedido": {"$gte": jb_desde, "$lte": jb_hasta}}},
-        # $group con _id None: un solo grupo con todos; suma los totales y cuenta los pedidos
-        {"$group": {"_id": None, "total_vendido": {"$sum": "$total"}, "numero_pedidos": {"$sum": 1}}},
-    ]))
-    # Si hubo ventas devuelve el resultado; si no, None
-    return jb_resultado[0] if jb_resultado else None
+# Modelos de las tablas que se consultan
+from app.models.jb_modelos import JbDetallePedido, JbPedido, JbProducto
 
 
-# Ranking de productos más vendidos (RF11)
-def jb_productos_mas_vendidos(jb_limite: int) -> list[dict]:
-    """Ranking de productos por cantidad vendida en pedidos ENTREGADOS."""
-    # Ejecuta las etapas y devuelve la lista de resultados
-    return list(jb_db.pedidos.aggregate([
-        # $match: solo pedidos ENTREGADOS
-        {"$match": {"estado": "ENTREGADO"}},
-        # $unwind: un documento por cada ítem del detalle
-        {"$unwind": "$detalle"},
-        # $group: agrupa por producto (GROUP BY id_producto)
-        {"$group": {
-            # Clave del grupo: el id del producto
-            "_id": "$detalle.id_producto",
-            # Suma de unidades vendidas
-            "cantidad_vendida": {"$sum": "$detalle.cantidad"},
-            # Suma del dinero vendido
-            "total_vendido": {"$sum": "$detalle.subtotal"},
-            # En cuántos pedidos aparece
-            "numero_pedidos": {"$sum": 1},
-        }},
-        # $sort: más unidades primero; si empatan, más dinero primero
-        {"$sort": {"cantidad_vendida": -1, "total_vendido": -1}},
-        # $limit: solo los primeros N
-        {"$limit": jb_limite},
-        # $lookup: trae el producto de la colección productos (JOIN) y lo deja en la lista "producto"
-        {"$lookup": {"from": "productos", "localField": "_id", "foreignField": "_id", "as": "producto"}},
-        # $project: elige y renombra los campos del resultado
-        {"$project": {
-            # 0 = no mostrar el _id
-            "_id": 0,
-            # El _id del grupo se muestra como id_producto
-            "id_producto": "$_id",
-            # Nombre del primer (y único) producto encontrado
-            "nombre": {"$first": "$producto.nombre"},
-            # 1 = mostrar el campo tal cual
-            "cantidad_vendida": 1,
-            # Mostrar el total vendido
-            "total_vendido": 1,
-            # Mostrar el número de pedidos
-            "numero_pedidos": 1,
-        }},
-    ]))
+# Número de pedidos y total vendido entre dos momentos
+def jb_ventas(jb_sesion: Session, jb_inicio: datetime, jb_fin: datetime) -> tuple[int, Decimal]:
+    """SELECT COUNT(*), SUM(total) FROM pedidos
+    WHERE estado = 'ENTREGADO' AND fecha_pedido >= :inicio AND fecha_pedido < :fin"""
+    # Arma la consulta
+    jb_consulta = select(
+        # Cantidad de pedidos
+        func.count(JbPedido.id_pedido),
+        # Suma de los totales; COALESCE pone 0 si no hay pedidos (SUM daría NULL)
+        func.coalesce(func.sum(JbPedido.total), 0),
+    ).where(  # WHERE: las condiciones van abajo
+        # Solo pedidos entregados (los anulados no son ventas)
+        JbPedido.estado == "ENTREGADO",
+        # Desde el inicio del rango (incluido)
+        JbPedido.fecha_pedido >= jb_inicio,
+        # Hasta antes del fin del rango
+        JbPedido.fecha_pedido < jb_fin,
+    )
+    # Ejecuta la consulta y toma la única fila del resultado
+    jb_numero, jb_total = jb_sesion.execute(jb_consulta).one()
+    # Devuelve los dos valores
+    return int(jb_numero), Decimal(jb_total)
+
+
+# Ranking de productos más vendidos
+def jb_mas_vendidos(jb_sesion: Session, jb_limite: int) -> list:
+    """SELECT producto, SUM(cantidad), SUM(subtotal) ... GROUP BY producto ORDER BY SUM(cantidad) DESC LIMIT :limite"""
+    # Suma de las cantidades vendidas, con nombre para usarla en el orden
+    jb_cantidad = func.sum(JbDetallePedido.cantidad).label("cantidad_vendida")
+    # Suma de los subtotales vendidos
+    jb_total = func.sum(JbDetallePedido.subtotal).label("total_vendido")
+    # Arma la consulta
+    jb_consulta = (
+        # Columnas del resultado
+        select(JbProducto.id_producto, JbProducto.nombre, jb_cantidad, jb_total)
+        # Une productos con detalle_pedido
+        .join(JbDetallePedido, JbDetallePedido.id_producto == JbProducto.id_producto)
+        # Une detalle_pedido con pedidos, para filtrar por estado
+        .join(JbPedido, JbPedido.id_pedido == JbDetallePedido.id_pedido)
+        # Solo pedidos entregados
+        .where(JbPedido.estado == "ENTREGADO")
+        # Agrupa por producto
+        .group_by(JbProducto.id_producto, JbProducto.nombre)
+        # Primero el que más unidades vendió; si empatan, el que más dinero dejó
+        .order_by(jb_cantidad.desc(), jb_total.desc(), JbProducto.id_producto)
+        # Solo los primeros jb_limite
+        .limit(jb_limite)
+    )
+    # Ejecuta la consulta y devuelve todas las filas
+    return list(jb_sesion.execute(jb_consulta).all())

@@ -35,7 +35,7 @@ def jb_borrado_logico(jb_texto: str) -> dict:
     }
 
 
-# Respuesta de un DELETE que sí borra el documento
+# Respuesta de un DELETE que sí borra el registro
 def jb_borrado_fisico(jb_texto: str) -> dict:
     # Mensaje de confirmación y tipo de borrado FISICO
     return {"mensaje": f"{jb_texto} se eliminó porque no tenía movimientos asociados", "tipo_borrado": "FISICO"}

@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta, timezone
 # Decimal: números exactos para dinero; ROUND_HALF_UP: redondeo normal (0.5 sube)
 from decimal import ROUND_HALF_UP, Decimal
 
-# Colombia no tiene horario de verano: America/Bogota siempre es UTC-5.
+# Colombia no tiene horario de verano: America/Bogota siempre es UTC-5
 JB_ZONA_BOGOTA = timezone(timedelta(hours=-5), "America/Bogota")
 # Molde para redondear a 2 decimales (dinero), como DECIMAL(10,2)
 JB_DOS_DECIMALES = Decimal("0.01")
@@ -14,14 +14,20 @@ JB_TRES_DECIMALES = Decimal("0.001")
 
 # Función que devuelve la fecha y hora actual de Colombia
 def jb_ahora() -> datetime:
-    """Fecha y hora actual de Colombia. Se guarda sin zona horaria en MongoDB."""
+    """Fecha y hora actual de Colombia, sin zona horaria (así se guarda en los DATETIME de MySQL)."""
     # Toma la hora actual en Bogotá, le quita la zona horaria y los microsegundos
     return datetime.now(JB_ZONA_BOGOTA).replace(tzinfo=None, microsecond=0)
 
 
+# Función que devuelve la fecha de hoy en Colombia
+def jb_hoy() -> date:
+    # Toma solo la fecha de la hora actual de Bogotá
+    return datetime.now(JB_ZONA_BOGOTA).date()
+
+
 # Función que pasa a hora de Colombia una fecha que llega en otra zona horaria
 def jb_hora_colombia(jb_fecha: datetime) -> datetime:
-    """Si una fecha llega con zona horaria (por ejemplo terminada en Z), la pasa a hora de Colombia."""
+    """Si la fecha trae zona horaria (por ejemplo, terminada en Z), la pasa a hora de Colombia sin zona."""
     # tzinfo distinto de None significa que la fecha trae zona horaria
     if jb_fecha.tzinfo is not None:
         # La convierte a hora de Bogotá y le quita la zona horaria
@@ -34,12 +40,6 @@ def jb_hora_colombia(jb_fecha: datetime) -> datetime:
 def jb_inicio_del_dia(jb_fecha: date) -> datetime:
     # time.min es 00:00:00: une la fecha con esa hora
     return datetime.combine(jb_fecha, time.min)
-
-
-# Función que convierte una fecha en el último segundo de ese día
-def jb_fin_del_dia(jb_fecha: date) -> datetime:
-    # Une la fecha con la hora 23:59:59
-    return datetime.combine(jb_fecha, time(23, 59, 59))
 
 
 # Función que redondea dinero

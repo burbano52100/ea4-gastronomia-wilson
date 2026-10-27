@@ -1,1 +1,1 @@
-"""Repositorios: única capa que consulta y modifica MongoDB."""
+"""Repositorios: consultas a MySQL y a MongoDB."""

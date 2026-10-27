@@ -1,7 +1,21 @@
+# Librerías de la API. Se instalan con: pip install -r requirements.txt
+# Framework de la API: rutas, validación y documentación Swagger
 fastapi==0.162.0
+# Servidor que pone a funcionar la API
 uvicorn==0.54.0
+# Validación de los datos que entran y salen
 pydantic==2.14.1
+# ORM para trabajar con las tablas de MySQL como clases de Python
+SQLAlchemy==2.1.6
+# Conector de Python a MySQL (SQLAlchemy lo usa por debajo)
+PyMySQL==1.2.3
+# Lo necesita PyMySQL para iniciar sesión en MySQL 8 (autenticación caching_sha2_password)
+cryptography==50.0.2
+# Conector oficial de MongoDB (colección calificaciones)
 pymongo==4.19.0
+# Crea y verifica los tokens JWT
 PyJWT==2.15.1
+# Cifra las contraseñas (RN06)
 bcrypt==5.0.0
+# Lee el archivo .env
 python-dotenv==1.2.4

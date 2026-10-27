@@ -1,26 +1,26 @@
-"""Esquemas de los reportes de ventas (RF11)."""
-# date: solo fecha (sin hora)
+"""Esquemas de los reportes (RF11)."""
+# date: solo fecha
 from datetime import date
 
-# BaseModel: clase base de Pydantic
+# BaseModel: clase base de los esquemas
 from pydantic import BaseModel
 
-# JbNumero: decimal que se responde como número
+# Decimal que se responde como número
 from app.schemas.jb_tipos import JbNumero
 
 
 # Respuesta de GET /reportes/ventas
 class JbReporteVentas(BaseModel):
-    # Fecha inicial del rango
+    # Fecha inicial del rango (incluida)
     desde: date
-    # Fecha final del rango
+    # Fecha final del rango (incluida completa)
     hasta: date
-    # Cuántos pedidos ENTREGADOS hay en el rango
+    # Cantidad de pedidos ENTREGADO en el rango
     numero_pedidos: int
     # Suma de los totales de esos pedidos
     total_vendido: JbNumero
-    # total_vendido / numero_pedidos
-    ticket_promedio: JbNumero
+    # total_vendido / numero_pedidos (0 si no hubo pedidos)
+    promedio_por_pedido: JbNumero
 
 
 # Un producto del ranking de GET /reportes/productos-mas-vendidos
@@ -29,11 +29,9 @@ class JbProductoVendido(BaseModel):
     posicion: int
     # Id del producto
     id_producto: int
-    # Nombre del producto; null si el producto ya no existe
-    nombre: str | None = None
-    # Unidades vendidas
-    cantidad_vendida: int
-    # En cuántos pedidos aparece
-    numero_pedidos: int
-    # Dinero que generó
+    # Nombre del producto
+    nombre: str
+    # Suma de las cantidades vendidas
+    cantidad_vendida: JbNumero
+    # Suma de los subtotales vendidos
     total_vendido: JbNumero

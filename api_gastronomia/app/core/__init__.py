@@ -1,1 +1,1 @@
-"""Configuración, seguridad y utilidades generales."""
+"""Núcleo: configuración, seguridad, errores y utilidades."""

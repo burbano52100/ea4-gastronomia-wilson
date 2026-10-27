@@ -1,106 +1,138 @@
-"""Esquemas de calificaciones de los clientes (RF12), guardadas en bd_gastronomia_nosql."""
+"""Esquemas de calificaciones de los clientes (RF12), guardadas en MongoDB."""
 # datetime: fecha y hora
 from datetime import datetime
+# Annotated: agrega reglas a un tipo
+from typing import Annotated
 
-# BaseModel: clase base; ConfigDict: configuración del esquema; Field: reglas de un campo
-from pydantic import BaseModel, ConfigDict, Field
+# BaseModel: clase base; ConfigDict: configuración; Field: reglas; field_validator: validación propia de un campo
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# Base de los esquemas de entrada (quita espacios de los textos)
-from app.schemas.jb_tipos import JbModeloEntrada
+# Tipos compartidos y la función que revisa repetidos
+from app.schemas.jb_tipos import JbModeloEntrada, jb_validar_sin_repetidos
 
-
-# Calificación de un producto, tal como la envía el cliente
-class JbCalificacionProducto(JbModeloEntrada):
-    # Producto que se califica
-    id_producto: int
-    # Calificación de 1 a 5 (ge = mayor o igual, le = menor o igual)
-    calificacion: int = Field(ge=1, le=5)
+# Nota: número entero de 1 a 5 (el validador $jsonSchema de MongoDB exige lo mismo)
+JbNota = Annotated[int, Field(ge=1, le=5)]
 
 
-# Datos para modificar una calificación
-class JbCalificacionActualizar(JbModeloEntrada):
-    # Calificación del servicio, de 1 a 5
-    calificacion_servicio: int = Field(ge=1, le=5)
+# Un producto calificado, tal como se envía (el nombre lo pone la API desde MySQL)
+class JbProductoCalificado(JbModeloEntrada):
+    # Producto: debe estar en el pedido
+    id_producto: int = Field(gt=0)
+    # Nota del producto
+    calificacion: JbNota
+
+
+# Datos para registrar una calificación
+class JbCalificacionCrear(JbModeloEntrada):
+    # Pedido calificado: debe existir en MySQL y estar ENTREGADO
+    id_pedido: int = Field(gt=0)
+    # Cliente: debe ser el que hizo el pedido
+    id_cliente: int = Field(gt=0)
+    # Nota del servicio
+    calificacion_servicio: JbNota
     # Comentario opcional, máximo 500 caracteres
     comentario: str | None = Field(default=None, max_length=500)
-    # Lista de productos calificados, con al menos uno
-    productos: list[JbCalificacionProducto] = Field(min_length=1)
+    # Productos calificados: de 1 a 50, sin repetidos
+    productos: list[JbProductoCalificado] = Field(min_length=1, max_length=50)
 
-    # Ejemplo que muestra Swagger al pulsar "Try it out"
+    # Validación propia del campo productos
+    @field_validator("productos")
+    # Se ejecuta sobre la clase, no sobre un objeto
+    @classmethod
+    # Recibe la lista de productos ya validados y la devuelve si no hay repetidos
+    def jb_sin_productos_repetidos(cls, jb_productos: list[JbProductoCalificado]) -> list[JbProductoCalificado]:
+        # Un producto se califica una sola vez en cada calificación
+        return jb_validar_sin_repetidos(jb_productos, "id_producto", "producto")
+
+    # Ejemplo que muestra Swagger al pulsar "Try it out" (el pedido 112 es ENTREGADO y aún no tiene calificación)
     model_config = ConfigDict(json_schema_extra={"examples": [{
-        "calificacion_servicio": 4,
-        "comentario": "Buena atención, el jugo estaba un poco dulce",
-        "productos": [{"id_producto": 1, "calificacion": 5}, {"id_producto": 2, "calificacion": 3}],
+        "id_pedido": 112,  # ejemplo del campo id_pedido
+        "id_cliente": 9,  # ejemplo del campo id_cliente
+        "calificacion_servicio": 5,  # ejemplo del campo calificacion_servicio
+        "comentario": "Excelente atención y buen sabor",  # ejemplo del campo comentario
+        "productos": [{"id_producto": 11, "calificacion": 5}, {"id_producto": 10, "calificacion": 4}],  # ejemplo del campo productos
     }]})
 
 
-# Datos para crear una calificación: los mismos de actualizar más el pedido
-class JbCalificacionCrear(JbCalificacionActualizar):
-    # Pedido que se califica (debe estar ENTREGADO)
-    id_pedido: int
+# Datos para modificar una calificación (el pedido y el cliente no cambian)
+class JbCalificacionActualizar(JbModeloEntrada):
+    # Nota del servicio
+    calificacion_servicio: JbNota
+    # Comentario opcional
+    comentario: str | None = Field(default=None, max_length=500)
+    # Productos calificados: de 1 a 50, sin repetidos
+    productos: list[JbProductoCalificado] = Field(min_length=1, max_length=50)
+
+    # Validación propia del campo productos
+    @field_validator("productos")
+    # Se ejecuta sobre la clase, no sobre un objeto
+    @classmethod
+    # Recibe la lista de productos ya validados y la devuelve si no hay repetidos
+    def jb_sin_productos_repetidos(cls, jb_productos: list[JbProductoCalificado]) -> list[JbProductoCalificado]:
+        # Un producto se califica una sola vez en cada calificación
+        return jb_validar_sin_repetidos(jb_productos, "id_producto", "producto")
 
     # Ejemplo que muestra Swagger al pulsar "Try it out"
     model_config = ConfigDict(json_schema_extra={"examples": [{
-        "id_pedido": 15,
-        "calificacion_servicio": 5,
-        "comentario": "Excelente atención y buen sabor",
-        "productos": [{"id_producto": 1, "calificacion": 5}, {"id_producto": 2, "calificacion": 4}],
+        "calificacion_servicio": 4,  # ejemplo del campo calificacion_servicio
+        "comentario": "Buen sabor, la espera fue un poco larga",  # ejemplo del campo comentario
+        "productos": [{"id_producto": 11, "calificacion": 4}],  # ejemplo del campo productos
     }]})
 
 
-# Producto calificado, como lo devuelve la API
-class JbCalificacionProductoRespuesta(BaseModel):
+# Un producto calificado, como lo devuelve la API
+class JbProductoCalificadoRespuesta(BaseModel):
     # Id del producto
     id_producto: int
-    # Nombre del producto (lo agrega la API)
+    # Nombre del producto (copiado de MySQL al registrar)
     nombre: str
-    # Calificación de 1 a 5
+    # Nota del producto
     calificacion: int
 
 
 # Calificación completa, como la devuelve la API
 class JbCalificacionRespuesta(BaseModel):
-    # Id de la calificación
-    id_calificacion: int
+    # Id del documento en MongoDB (24 caracteres)
+    id_calificacion: str
     # Pedido calificado
     id_pedido: int
-    # Cliente que calificó (lo toma la API del pedido)
+    # Cliente
     id_cliente: int
-    # Fecha y hora de la calificación
+    # Fecha y hora del registro (hora de Colombia)
     fecha: datetime
-    # Calificación del servicio
+    # Nota del servicio
     calificacion_servicio: int
-    # Comentario, puede ser null
+    # Comentario (puede ser null)
     comentario: str | None = None
     # Productos calificados
-    productos: list[JbCalificacionProductoRespuesta]
+    productos: list[JbProductoCalificadoRespuesta]
 
 
-# Una opinión sobre un producto, para el resumen de calificaciones del producto
-class JbOpinionProducto(BaseModel):
-    # Id de la calificación
-    id_calificacion: int
-    # Pedido calificado
+# Una calificación de un producto (para GET /calificaciones/producto/{id})
+class JbCalificacionDeProducto(BaseModel):
+    # Id del documento en MongoDB
+    id_calificacion: str
+    # Pedido
     id_pedido: int
-    # Cliente que calificó
+    # Cliente
     id_cliente: int
-    # Fecha de la calificación
+    # Fecha y hora
     fecha: datetime
-    # Calificación que recibió el producto
+    # Nota que recibió el producto en esa calificación
     calificacion: int
-    # Comentario general, puede ser null
+    # Comentario general (puede ser null)
     comentario: str | None = None
 
 
-# Respuesta de GET /calificaciones/producto/{id}: promedio y opiniones de un producto
-class JbResumenCalificaciones(BaseModel):
+# Respuesta de GET /calificaciones/producto/{id}
+class JbCalificacionesProducto(BaseModel):
     # Id del producto
     id_producto: int
     # Nombre del producto
-    producto: str
-    # Promedio de calificaciones; null si nadie lo ha calificado
-    promedio: float | None
+    nombre: str
     # Cuántas calificaciones tiene
     total_calificaciones: int
-    # Lista de opiniones
-    calificaciones: list[JbOpinionProducto]
+    # Promedio de sus notas, con 2 decimales (null si no tiene calificaciones)
+    promedio: float | None = None
+    # Lista de calificaciones, de la más reciente a la más antigua
+    calificaciones: list[JbCalificacionDeProducto]

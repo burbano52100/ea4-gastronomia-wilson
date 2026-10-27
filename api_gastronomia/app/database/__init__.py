@@ -1,1 +1,1 @@
-"""Conexión a MongoDB."""
+"""Conexiones a MySQL y a MongoDB."""

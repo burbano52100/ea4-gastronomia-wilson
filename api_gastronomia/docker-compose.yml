@@ -1,0 +1,87 @@
+# Levanta las dos bases de datos del proyecto: MySQL 8 y MongoDB 7.
+# Uso: docker compose up -d   (y para apagarlas: docker compose down)
+# Los valores entre ${ } se leen del archivo .env, que no se sube a GitHub.
+
+services:
+  # Base de datos relacional principal (bd_gastronomia)
+  mysql:
+    # Imagen oficial de MySQL 8.4 (versión LTS de MySQL 8)
+    image: mysql:8.4
+    # Nombre del contenedor
+    container_name: jb_mysql_gastronomia
+    # Si el equipo se reinicia, el contenedor vuelve a arrancar (salvo que se haya detenido a mano)
+    restart: unless-stopped
+    # Variables de entorno del contenedor
+    environment:
+      # Contraseña de root, tomada del .env (no queda escrita en este archivo)
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      # Zona horaria del sistema operativo del contenedor
+      TZ: America/Bogota
+    # Opciones con las que arranca el servidor MySQL
+    command:
+      # Juego de caracteres utf8mb4: guarda tildes, eñes y cualquier símbolo
+      - --character-set-server=utf8mb4
+      # Intercalación de utf8mb4: compara textos sin distinguir mayúsculas ni tildes
+      - --collation-server=utf8mb4_0900_ai_ci
+      # Zona horaria de MySQL: America/Bogota es UTC-5 todo el año
+      - --default-time-zone=-05:00
+    # Puertos: solo se abre en este equipo (127.0.0.1), no en la red
+    ports:
+      # Puerto del equipo (del .env, 3306 si no está) hacia el puerto 3306 del contenedor
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    # Volúmenes
+    volumes:
+      # Los datos viven en un volumen: no se pierden aunque se borre el contenedor
+      - jb_datos_mysql:/var/lib/mysql
+      # La carpeta database/ queda dentro del contenedor en /scripts (solo lectura) para ejecutar los scripts
+      - ./database:/scripts:ro
+    # Revisa cada 10 segundos si MySQL ya responde
+    healthcheck:
+      # mysqladmin ping responde bien cuando el servidor está encendido
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      # Cada cuánto revisa
+      interval: 10s
+      # Cuántas veces puede fallar antes de marcarlo como no saludable
+      retries: 10
+
+  # Base de datos NoSQL para las calificaciones (bd_gastronomia_nosql)
+  mongo:
+    # Imagen oficial de MongoDB 7.0
+    image: mongo:7.0
+    # Nombre del contenedor
+    container_name: jb_mongo_gastronomia
+    # Si el equipo se reinicia, el contenedor vuelve a arrancar
+    restart: unless-stopped
+    # Variables de entorno del contenedor
+    environment:
+      # Usuario root de MongoDB, tomado del .env (activa la autenticación)
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USUARIO}
+      # Contraseña de root, tomada del .env
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      # Zona horaria del sistema operativo del contenedor
+      TZ: America/Bogota
+    # Puertos: 27018 en el equipo para no chocar con un MongoDB instalado en Windows (27017)
+    ports:
+      # Puerto del equipo (del .env, 27018 si no está) hacia el puerto 27017 del contenedor
+      - "127.0.0.1:${MONGO_PORT:-27018}:27017"
+    # Volúmenes
+    volumes:
+      # Los datos viven en un volumen: no se pierden aunque se borre el contenedor
+      - jb_datos_mongo:/data/db
+      # La carpeta database/ queda dentro del contenedor en /scripts (solo lectura)
+      - ./database:/scripts:ro
+    # Revisa cada 10 segundos si MongoDB ya responde
+    healthcheck:
+      # Ejecuta un ping con mongosh, que viene dentro de la imagen
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      # Cada cuánto revisa
+      interval: 10s
+      # Cuántas veces puede fallar antes de marcarlo como no saludable
+      retries: 10
+
+# Volúmenes con nombre donde Docker guarda los datos de las dos bases
+volumes:
+  # Datos de MySQL
+  jb_datos_mysql:
+  # Datos de MongoDB
+  jb_datos_mongo:

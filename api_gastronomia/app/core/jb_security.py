@@ -10,11 +10,19 @@ import jwt
 from fastapi import Depends, HTTPException, status
 # HTTPBearer: lee el encabezado "Authorization: Bearer <token>"; HTTPAuthorizationCredentials: lo que se leyó
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+# Session: sesión de trabajo con MySQL
+from sqlalchemy.orm import Session
 
 # Clave secreta, algoritmo y duración del token (vienen del .env)
 from app.core.jb_config import JB_JWT_ALGORITMO, JB_JWT_MINUTOS, JB_JWT_SECRET
+# Dependencia que entrega la sesión de MySQL
+from app.database.jb_conexion_mysql import jb_obtener_sesion
+# Modelo de la tabla usuarios
+from app.models.jb_modelos import JbUsuario
+# Consultas a la tabla usuarios
+from app.repositories import jb_usuario_repository
 
-# Lector del token; además crea el botón "Authorize" de Swagger
+# Lector del token; además crea el botón "Authorize" de Swagger (con una caja para pegar el token)
 jb_esquema_bearer = HTTPBearer(
     # Si falta el token no responde solo: la API decide y responde 401 con un mensaje en español
     auto_error=False,
@@ -39,21 +47,21 @@ def jb_verificar_password(jb_password: str, jb_hash: str) -> bool:
     try:
         # checkpw devuelve True si la contraseña coincide con el hash
         return bcrypt.checkpw(jb_password.encode("utf-8"), jb_hash.encode("utf-8"))
-    # Si el hash guardado está dañado, bcrypt lanza ValueError
+    # Si el hash guardado está dañado o la contraseña pasa de 72 bytes, bcrypt lanza ValueError
     except ValueError:
         # En ese caso se toma como contraseña incorrecta
         return False
 
 
-# Función que crea el token JWT al iniciar sesión
+# Función que crea el token JWT al iniciar sesión (RF01)
 def jb_crear_token(jb_id_usuario: int, jb_rol: str) -> str:
     # Momento actual en UTC (el estándar JWT usa UTC)
     jb_momento = datetime.now(timezone.utc)
-    # Datos que van dentro del token (payload)
+    # Datos que van dentro del token (payload). Van firmados, NO ocultos: nunca se pone la contraseña aquí
     jb_payload = {
         # sub (subject): el id del usuario, como texto
         "sub": str(jb_id_usuario),
-        # rol del usuario, para revisar permisos sin consultar la base
+        # Rol del usuario (RF01 pide que el token lleve el rol)
         "rol": jb_rol,
         # iat (issued at): cuándo se creó el token
         "iat": jb_momento,
@@ -74,11 +82,13 @@ def jb_no_autorizado(jb_mensaje: str) -> HTTPException:
 def jb_usuario_actual(
     # FastAPI lee el encabezado Authorization con jb_esquema_bearer; si no viene, queda en None
     jb_credenciales: HTTPAuthorizationCredentials | None = Depends(jb_esquema_bearer),
-) -> dict:
-    """Dependencia de todos los endpoints privados: sin un token válido responde 401."""
+    # Sesión de MySQL para buscar al usuario
+    jb_sesion: Session = Depends(jb_obtener_sesion),
+) -> JbUsuario:  # devuelve el usuario dueño del token
+    """Dependencia de todos los endpoints privados: sin un token válido de un usuario ACTIVO responde 401."""
     # Sin token: 401
     if jb_credenciales is None:
-        # Corta la petición con el mensaje de qué falta
+        # Corta la petición diciendo qué falta
         raise jb_no_autorizado("Token requerido: envíe el encabezado Authorization: Bearer <token>")
     # Se intenta leer y verificar el token
     try:
@@ -101,12 +111,26 @@ def jb_usuario_actual(
     except jwt.InvalidTokenError:
         # 401 por token inválido
         raise jb_no_autorizado("Token inválido")
-    # Un token sin rol no sirve para revisar permisos
-    if jb_payload.get("rol") is None:
-        # 401 por token incompleto
-        raise jb_no_autorizado("Token inválido: no contiene el rol")
-    # Devuelve el id (convertido a número) y el rol del usuario
-    return {"id_usuario": int(jb_payload["sub"]), "rol": jb_payload["rol"]}
+    # El sub debe ser el número del usuario
+    try:
+        # Convierte el texto en número
+        jb_id_usuario = int(jb_payload["sub"])
+    # Si no es un número, el token no es de esta API
+    except (TypeError, ValueError):
+        # 401 por token inválido
+        raise jb_no_autorizado("Token inválido")
+    # Busca al usuario en MySQL: así un usuario borrado o inactivado no puede seguir usando su token
+    jb_usuario = jb_usuario_repository.jb_buscar(jb_sesion, jb_id_usuario)
+    # Si ya no existe...
+    if jb_usuario is None:
+        # ...401
+        raise jb_no_autorizado("El usuario del token ya no existe")
+    # Si está INACTIVO...
+    if jb_usuario.estado != "ACTIVO":
+        # ...401
+        raise jb_no_autorizado("El usuario está INACTIVO: no puede usar la API")
+    # Entrega el usuario al endpoint (con su rol actual de la base de datos)
+    return jb_usuario
 
 
 # Función que crea una dependencia de permisos para los roles que se le pasen
@@ -114,9 +138,9 @@ def jb_requiere_roles(*jb_roles: str):
     """Crea una dependencia que solo deja pasar a los roles indicados; si no, responde 403."""
 
     # Dependencia interna: primero obtiene el usuario del token (401 si no hay) y luego revisa su rol
-    def jb_verificar_rol(jb_usuario: dict = Depends(jb_usuario_actual)) -> dict:
+    def jb_verificar_rol(jb_usuario: JbUsuario = Depends(jb_usuario_actual)) -> JbUsuario:
         # Si el rol del usuario no está en la lista de roles permitidos...
-        if jb_usuario["rol"] not in jb_roles:
+        if jb_usuario.rol not in jb_roles:
             # ...responde 403
             raise HTTPException(
                 # Código 403 Forbidden

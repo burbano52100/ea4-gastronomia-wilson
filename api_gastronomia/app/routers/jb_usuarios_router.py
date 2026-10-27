@@ -1,71 +1,84 @@
-"""Endpoints de usuarios del sistema (RF02). Roles: ADMIN."""
+"""Endpoints de usuarios (RF02). Roles: solo ADMIN."""
+# Annotated: agrega información extra a un tipo
+from typing import Annotated
+
 # APIRouter: agrupa endpoints; Depends: dependencias (seguridad); status: nombres de los códigos HTTP
 from fastapi import APIRouter, Depends, status
 
 # Respuestas de error que se documentan en Swagger
-from app.core.jb_respuestas import JB_PRIVADO, JB_R400, JB_R404, JB_R409
+from app.core.jb_respuestas import JB_PRIVADO, JB_R404, JB_R409
 # Dependencia que exige uno de los roles indicados
 from app.core.jb_security import jb_requiere_roles
+# Sesión de MySQL
+from app.database.jb_conexion_mysql import JbSesion
+# Modelo de la tabla usuarios
+from app.models.jb_modelos import JbUsuario
 # Esquema de la respuesta de los DELETE
 from app.schemas.jb_tipos import JbResultadoEliminacion
-# Esquemas de usuarios (lo que entra y lo que sale)
+# Esquemas de usuarios
 from app.schemas.jb_usuario_schema import JbUsuarioActualizar, JbUsuarioCrear, JbUsuarioRespuesta
 # Servicio de usuarios, con el nombre corto jb_servicio
 from app.services import jb_usuario_service as jb_servicio
 
-# Dependencia "solo ADMIN"; se guarda en una variable para usarla también al eliminar (y saber quién elimina)
+# Dependencia que solo deja pasar al rol ADMIN
 jb_solo_admin = jb_requiere_roles("ADMIN")
-# Router: rutas /usuarios; TODOS sus endpoints exigen ADMIN
-jb_router = APIRouter(prefix="/usuarios", tags=["Usuarios"], responses=JB_PRIVADO,
-                      dependencies=[Depends(jb_solo_admin)])
+# Router: rutas /usuarios, sección "Usuarios" de Swagger; TODOS sus endpoints exigen ADMIN
+jb_router = APIRouter(prefix="/usuarios", tags=["Usuarios"], dependencies=[Depends(jb_solo_admin)], responses=JB_PRIVADO)
 
 
-# GET /api/v1/usuarios: lista todos (sin contraseña)
+# GET /api/v1/usuarios: lista todos
 @jb_router.get("", response_model=list[JbUsuarioRespuesta], summary="Listar usuarios")
-def jb_listar_usuarios():
-    """Lista los usuarios. Nunca devuelve la contraseña (RN06). **Roles:** ADMIN."""
+# Recibe la sesión de MySQL
+def jb_listar_usuarios(jb_sesion: JbSesion):
+    """Lista los usuarios sin su contraseña (RN06). **Roles:** ADMIN."""
     # Pide la lista al servicio
-    return jb_servicio.jb_listar()
+    return jb_servicio.jb_listar(jb_sesion)
 
 
 # GET /api/v1/usuarios/{id}: consulta uno
 @jb_router.get("/{id_usuario}", response_model=JbUsuarioRespuesta, summary="Consultar un usuario", responses=JB_R404)
-def jb_obtener_usuario(id_usuario: int):
+# Recibe el id_usuario de la URL y la sesión de MySQL
+def jb_obtener_usuario(id_usuario: int, jb_sesion: JbSesion):
     """**Roles:** ADMIN."""
     # Busca el usuario (404 si no existe)
-    return jb_servicio.jb_obtener(id_usuario)
+    return jb_servicio.jb_obtener(jb_sesion, id_usuario)
 
 
 # POST /api/v1/usuarios: crea uno (201)
 @jb_router.post("", response_model=JbUsuarioRespuesta, status_code=status.HTTP_201_CREATED,
-                summary="Crear usuario", responses=JB_R409)
-# El cuerpo se valida con JbUsuarioCrear
-def jb_crear_usuario(jb_datos: JbUsuarioCrear):
-    """Crea un usuario con rol ADMIN, CAJERO o COCINERO. Correo e identificación no se repiten (409).
+                summary="Crear usuario", responses=JB_R409)  # título en Swagger y errores que puede responder
+# Recibe el cuerpo JSON ya validado y la sesión de MySQL
+def jb_crear_usuario(jb_datos: JbUsuarioCrear, jb_sesion: JbSesion):
+    """La contraseña se guarda cifrada con bcrypt (RN06). El correo y la identificación no se repiten.
 
     **Roles:** ADMIN.
     """
     # Convierte el esquema en diccionario y lo pasa al servicio
-    return jb_servicio.jb_crear(jb_datos.model_dump())
+    return jb_servicio.jb_crear(jb_sesion, jb_datos.model_dump())
 
 
 # PUT /api/v1/usuarios/{id}: modifica uno
 @jb_router.put("/{id_usuario}", response_model=JbUsuarioRespuesta, summary="Actualizar usuario",
-               responses={**JB_R404, **JB_R409})
-# Recibe el id de la URL y el cuerpo validado con JbUsuarioActualizar
-def jb_actualizar_usuario(id_usuario: int, jb_datos: JbUsuarioActualizar):
-    """Si no envía `password`, se conserva la contraseña actual. **Roles:** ADMIN."""
+               responses={**JB_R404, **JB_R409})  # errores que puede responder
+# Recibe el id_usuario de la URL, el cuerpo JSON ya validado y la sesión de MySQL
+def jb_actualizar_usuario(id_usuario: int, jb_datos: JbUsuarioActualizar, jb_sesion: JbSesion):
+    """Si se envía `password` se cambia la contraseña; si no, se conserva. Debe quedar al menos un ADMIN activo.
+
+    **Roles:** ADMIN.
+    """
     # Pasa el id y los datos al servicio
-    return jb_servicio.jb_actualizar(id_usuario, jb_datos.model_dump())
+    return jb_servicio.jb_actualizar(jb_sesion, id_usuario, jb_datos.model_dump())
 
 
 # DELETE /api/v1/usuarios/{id}: elimina o inactiva uno
 @jb_router.delete("/{id_usuario}", response_model=JbResultadoEliminacion, summary="Eliminar usuario",
-                  responses={**JB_R400, **JB_R404})
-# Recibe el id de la URL y el usuario del token (para no permitir que se elimine a sí mismo)
-def jb_eliminar_usuario(id_usuario: int, jb_usuario: dict = Depends(jb_solo_admin)):
-    """Si el usuario registró pedidos o compras pasa a INACTIVO (RN04); si no, se elimina.
-    No se puede eliminar el usuario con el que se inició sesión. **Roles:** ADMIN.
+                  responses={**JB_R404, **JB_R409})  # errores que puede responder
+# jb_actual es el ADMIN que hace la petición (la misma dependencia del router, no se ejecuta dos veces)
+def jb_eliminar_usuario(id_usuario: int, jb_sesion: JbSesion, jb_actual: Annotated[JbUsuario, Depends(jb_solo_admin)]):
+    """Si el usuario ya registró pedidos o compras queda INACTIVO; si no, se borra.
+    Nadie puede eliminarse a sí mismo y debe quedar al menos un ADMIN activo.
+
+    **Roles:** ADMIN.
     """
-    # Pasa el id a eliminar y el id de quien está en sesión
-    return jb_servicio.jb_eliminar(id_usuario, jb_usuario["id_usuario"])
+    # El servicio decide si es borrado lógico o físico
+    return jb_servicio.jb_eliminar(jb_sesion, id_usuario, jb_actual.id_usuario)

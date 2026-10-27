@@ -1,82 +1,84 @@
-"""Esquemas de productos (RF04), su receta (RF05) y su costo de producción (RF06)."""
+"""Esquemas de productos (RF04), de su receta (RF05) y de su costo de producción (RF06)."""
 # Literal: solo permite ciertos valores fijos
 from typing import Literal
 
 # BaseModel: clase base; ConfigDict: configuración del esquema; Field: reglas de un campo
 from pydantic import BaseModel, ConfigDict, Field
 
-# Tipos compartidos: dinero mayor que 0, base de entrada y número para las respuestas
-from app.schemas.jb_tipos import JbDineroPositivo, JbModeloEntrada, JbNumero
+# Tipos compartidos
+from app.schemas.jb_tipos import JbDineroPositivo, JbModeloEntrada, JbModeloRespuesta, JbNumero
 
-# Estados de producto permitidos (ENUM del instructivo)
+# Estados de un producto (ENUM de la tabla productos)
 JbEstadoProducto = Literal["DISPONIBLE", "AGOTADO", "INACTIVO"]
 
 
 # Datos para crear un producto
 class JbProductoCrear(JbModeloEntrada):
-    # Código interno: de 1 a 20 caracteres
-    codigo: str = Field(min_length=1, max_length=20)
+    # Código interno: de 2 a 20 caracteres
+    codigo: str = Field(min_length=2, max_length=20)
     # Nombre: de 2 a 100 caracteres
     nombre: str = Field(min_length=2, max_length=100)
-    # Descripción opcional sin límite de tamaño
-    descripcion: str | None = None
-    # Precio de venta mayor que 0, como CHECK (precio_venta > 0)
+    # Descripción opcional
+    descripcion: str | None = Field(default=None, max_length=1000)
+    # Precio de venta mayor que 0, con máximo 2 decimales
     precio_venta: JbDineroPositivo
-    # Porción, unidad, vaso...: de 1 a 20 caracteres
-    unidad_venta: str = Field(min_length=1, max_length=20)
-    # Categoría del producto
-    id_categoria: int
+    # Porción, unidad, libra, vaso...
+    unidad_venta: str = Field(min_length=2, max_length=20)
+    # Categoría: debe existir y estar ACTIVA
+    id_categoria: int = Field(gt=0)
 
     # Ejemplo que muestra Swagger al pulsar "Try it out"
     model_config = ConfigDict(json_schema_extra={"examples": [{
-        "codigo": "PRD-100",
-        "nombre": "Tamal huilense",
-        "descripcion": "Tamal de arroz con pollo y cerdo",
-        "precio_venta": 9000,
-        "unidad_venta": "unidad",
-        "id_categoria": 1,
+        "codigo": "BEB-010",  # ejemplo del campo codigo
+        "nombre": "Jugo de mora",  # ejemplo del campo nombre
+        "descripcion": "Jugo natural de mora en agua",  # ejemplo del campo descripcion
+        "precio_venta": 4500,  # ejemplo del campo precio_venta
+        "unidad_venta": "vaso",  # ejemplo del campo unidad_venta
+        "id_categoria": 2,  # ejemplo del campo id_categoria
     }]})
 
 
-# Datos para modificar un producto: los mismos de crear más el estado
+# Datos para modificar un producto: los de crear más el estado
 class JbProductoActualizar(JbProductoCrear):
-    # Estado; si no se envía queda DISPONIBLE
-    estado: JbEstadoProducto = "DISPONIBLE"
+    # DISPONIBLE, AGOTADO o INACTIVO
+    estado: JbEstadoProducto
 
     # Ejemplo que muestra Swagger al pulsar "Try it out"
     model_config = ConfigDict(json_schema_extra={"examples": [{
-        "codigo": "PRD-100",
-        "nombre": "Tamal huilense",
-        "descripcion": "Tamal de arroz con pollo, cerdo y huevo",
-        "precio_venta": 9500,
-        "unidad_venta": "unidad",
-        "id_categoria": 1,
-        "estado": "DISPONIBLE",
+        "codigo": "BEB-010",  # ejemplo del campo codigo
+        "nombre": "Jugo de mora",  # ejemplo del campo nombre
+        "descripcion": "Jugo natural de mora en agua",  # ejemplo del campo descripcion
+        "precio_venta": 5000,  # ejemplo del campo precio_venta
+        "unidad_venta": "vaso",  # ejemplo del campo unidad_venta
+        "id_categoria": 2,  # ejemplo del campo id_categoria
+        "estado": "DISPONIBLE",  # ejemplo del campo estado
     }]})
 
 
 # Producto como lo devuelve la API
-class JbProductoRespuesta(BaseModel):
+class JbProductoRespuesta(JbModeloRespuesta):
     # Id del producto
     id_producto: int
-    # Código interno
+    # Código
     codigo: str
     # Nombre
     nombre: str
-    # Descripción, puede ser null
+    # Descripción (puede ser null)
     descripcion: str | None = None
     # Precio de venta
     precio_venta: JbNumero
     # Unidad de venta
     unidad_venta: str
-    # Categoría
+    # Id de la categoría
     id_categoria: int
-    # DISPONIBLE, AGOTADO o INACTIVO
+    # Nombre de la categoría (lo agrega la API)
+    nombre_categoria: str | None = None
+    # Estado
     estado: JbEstadoProducto
 
 
-# Una línea de la receta de un producto, con su costo
-class JbLineaRecetaProducto(BaseModel):
+# Una línea de la receta, con su costo
+class JbLineaReceta(BaseModel):
     # Id de la línea de receta
     id_receta: int
     # Id del insumo
@@ -87,23 +89,23 @@ class JbLineaRecetaProducto(BaseModel):
     unidad_medida: str
     # Cantidad del insumo por unidad de producto
     cantidad: JbNumero
-    # Costo unitario actual del insumo
+    # Costo actual del insumo por unidad de medida
     costo_unitario: JbNumero
     # cantidad x costo_unitario
-    costo: JbNumero
+    costo_linea: JbNumero
 
 
-# Respuesta de GET /productos/{id}/receta
+# Receta completa de un producto (GET /productos/{id}/receta)
 class JbRecetaDeProducto(BaseModel):
     # Id del producto
     id_producto: int
     # Nombre del producto
     producto: str
-    # Insumos de la receta
-    insumos: list[JbLineaRecetaProducto]
+    # Líneas de la receta (vacía si el producto no tiene receta)
+    insumos: list[JbLineaReceta]
 
 
-# Respuesta de GET /productos/{id}/costo (RF06)
+# Costo de producción y margen (GET /productos/{id}/costo)
 class JbCostoProducto(BaseModel):
     # Id del producto
     id_producto: int
@@ -111,9 +113,11 @@ class JbCostoProducto(BaseModel):
     producto: str
     # Precio de venta
     precio_venta: JbNumero
-    # Suma de cantidad x costo_unitario de toda la receta
+    # Suma de (cantidad x costo_unitario) de la receta
     costo_produccion: JbNumero
     # precio_venta - costo_produccion
     margen: JbNumero
-    # Margen como porcentaje del precio de venta
+    # margen / precio_venta x 100
     margen_porcentaje: JbNumero
+    # Líneas de la receta con su costo
+    detalle: list[JbLineaReceta]

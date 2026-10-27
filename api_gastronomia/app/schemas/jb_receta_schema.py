@@ -1,33 +1,42 @@
-"""Esquemas de recetas o fichas técnicas (RF05): qué insumos y cuánto lleva cada producto."""
-# BaseModel: clase base; ConfigDict: configuración del esquema
-from pydantic import BaseModel, ConfigDict
+"""Esquemas de recetas o fichas técnicas (RF05)."""
+# ConfigDict: configuración del esquema; Field: reglas de un campo
+from pydantic import ConfigDict, Field
 
-# Tipos compartidos: cantidad, base de entrada y número para las respuestas
-from app.schemas.jb_tipos import JbCantidad, JbModeloEntrada, JbNumero
+# Tipos compartidos
+from app.schemas.jb_tipos import JbCantidad, JbModeloEntrada, JbModeloRespuesta, JbNumero
 
 
-# Datos para crear o modificar una línea de receta
+# Datos para crear una línea de receta: "este producto usa esta cantidad de este insumo"
 class JbRecetaCrear(JbModeloEntrada):
-    # Producto al que pertenece la receta
-    id_producto: int
-    # Insumo que usa
-    id_insumo: int
-    # Cantidad del insumo por unidad de producto, mayor que 0 con hasta 3 decimales
+    # Producto: debe existir
+    id_producto: int = Field(gt=0)
+    # Insumo: debe existir y estar ACTIVO
+    id_insumo: int = Field(gt=0)
+    # Cantidad por unidad de producto: mayor que 0, hasta 3 decimales
     cantidad: JbCantidad
 
     # Ejemplo que muestra Swagger al pulsar "Try it out"
-    model_config = ConfigDict(json_schema_extra={"examples": [
-        {"id_producto": 3, "id_insumo": 5, "cantidad": 0.010}
-    ]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id_producto": 15, "id_insumo": 8, "cantidad": 0.030}]})
+
+
+# Datos para modificar una línea de receta (los mismos campos)
+class JbRecetaActualizar(JbRecetaCrear):
+    """Mismos campos que JbRecetaCrear: un PUT reemplaza la línea completa."""
 
 
 # Línea de receta como la devuelve la API
-class JbRecetaRespuesta(BaseModel):
-    # Id de la línea de receta
+class JbRecetaRespuesta(JbModeloRespuesta):
+    # Id de la línea
     id_receta: int
-    # Producto
+    # Id del producto
     id_producto: int
-    # Insumo
+    # Nombre del producto (lo agrega la API)
+    nombre_producto: str
+    # Id del insumo
     id_insumo: int
-    # Cantidad
+    # Nombre del insumo (lo agrega la API)
+    nombre_insumo: str
+    # Unidad de medida del insumo
+    unidad_medida: str
+    # Cantidad por unidad de producto
     cantidad: JbNumero

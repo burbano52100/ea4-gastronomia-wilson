@@ -1,1 +1,1 @@
-"""Modelos de las colecciones (validación $jsonSchema e índices)."""
+"""Modelos de las tablas de MySQL (SQLAlchemy)."""

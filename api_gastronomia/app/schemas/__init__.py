@@ -1,1 +1,1 @@
-"""Esquemas Pydantic: validación de los datos que entran y salen de la API."""
+"""Esquemas de validación (Pydantic): lo que entra y lo que sale de la API."""

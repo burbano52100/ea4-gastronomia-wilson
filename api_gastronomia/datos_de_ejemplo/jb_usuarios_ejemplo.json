@@ -1,0 +1,74 @@
+[
+  {
+    "identificacion": "1075201112",
+    "nombres": "Laura Marcela",
+    "apellidos": "Muñoz Castro",
+    "correo": "laura.munoz@gastronomia.com",
+    "password": "Admin123*",
+    "rol": "ADMIN"
+  },
+  {
+    "identificacion": "1075202223",
+    "nombres": "Carlos Andrés",
+    "apellidos": "Rojas Pérez",
+    "correo": "carlos.rojas@gastronomia.com",
+    "password": "Cajero123*",
+    "rol": "CAJERO"
+  },
+  {
+    "identificacion": "1075203334",
+    "nombres": "Diana Patricia",
+    "apellidos": "Gómez Ruiz",
+    "correo": "diana.gomez@gastronomia.com",
+    "password": "Cajero123*",
+    "rol": "CAJERO"
+  },
+  {
+    "identificacion": "1075204445",
+    "nombres": "Jhon Fredy",
+    "apellidos": "Ortiz Silva",
+    "correo": "jhon.ortiz@gastronomia.com",
+    "password": "Cajero123*",
+    "rol": "CAJERO"
+  },
+  {
+    "identificacion": "1075205556",
+    "nombres": "María Fernanda",
+    "apellidos": "Cruz Peña",
+    "correo": "maria.cruz@gastronomia.com",
+    "password": "Cocinero123*",
+    "rol": "COCINERO"
+  },
+  {
+    "identificacion": "1075206667",
+    "nombres": "José Luis",
+    "apellidos": "Vargas Díaz",
+    "correo": "jose.vargas@gastronomia.com",
+    "password": "Cocinero123*",
+    "rol": "COCINERO"
+  },
+  {
+    "identificacion": "1075207778",
+    "nombres": "Ana Lucía",
+    "apellidos": "Torres Mora",
+    "correo": "ana.torres@gastronomia.com",
+    "password": "Cocinero123*",
+    "rol": "COCINERO"
+  },
+  {
+    "identificacion": "1075208889",
+    "nombres": "Pedro Antonio",
+    "apellidos": "Ramírez León",
+    "correo": "pedro.ramirez@gastronomia.com",
+    "password": "Cajero123*",
+    "rol": "CAJERO"
+  },
+  {
+    "identificacion": "1075209990",
+    "nombres": "Sandra Milena",
+    "apellidos": "Castro Ríos",
+    "correo": "sandra.castro@gastronomia.com",
+    "password": "Cajero123*",
+    "rol": "CAJERO"
+  }
+]
