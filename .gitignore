@@ -1,2 +1,4 @@
 # Configuración personal de Visual Studio Code (cada persona tiene la suya)
 .vscode/
+# Archivo temporal que Word crea mientras un documento está abierto
+~$*

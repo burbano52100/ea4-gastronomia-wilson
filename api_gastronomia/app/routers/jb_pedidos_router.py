@@ -20,6 +20,8 @@ from app.schemas.jb_pedido_schema import (
     JbPedidoCrear,  # datos para crear
     JbPedidoEstado,  # datos para cambiar el estado
     JbPedidoRespuesta,  # forma de la respuesta
+    # ----- VENTA RAPIDA (usabilidad.md, paso B3): esquema de la venta -----
+    JbVentaCrear,  # datos de la venta rápida
 )
 # Esquema de la respuesta de los DELETE
 from app.schemas.jb_tipos import JbResultadoEliminacion
@@ -123,3 +125,23 @@ def jb_eliminar_pedido(id_pedido: int, jb_sesion: JbSesion):
     """
     # Pide la anulación al servicio
     return jb_servicio.jb_eliminar(jb_sesion, id_pedido)
+
+
+# ----- VENTA RAPIDA (usabilidad.md, paso B3): ruta POST /api/v1/pedidos/venta -----
+# Dependencia para la venta rápida: solo ADMIN
+jb_solo_admin = jb_requiere_roles("ADMIN")
+
+
+# POST /api/v1/pedidos/venta: vende un producto en un solo paso (201, solo ADMIN)
+@jb_router.post("/venta", response_model=JbPedidoRespuesta, status_code=status.HTTP_201_CREATED,
+                summary="Venta rápida de un producto", responses={**JB_R400, **JB_R409})  # título en Swagger y errores que puede responder
+# jb_usuario es el ADMIN que hace la venta (sale del token)
+def jb_venta_rapida(jb_datos: JbVentaCrear, jb_sesion: JbSesion, jb_usuario: Annotated[JbUsuario, Depends(jb_solo_admin)]):
+    """Registra un pedido de un solo producto que queda ENTREGADO de una vez.
+    **RN01:** el precio sale de la base de datos. **RN03:** descuenta del inventario los insumos de la receta;
+    si no alcanzan responde 409 y no se guarda nada.
+
+    **Roles:** ADMIN.
+    """
+    # Pasa los datos y el id del usuario del token al servicio
+    return jb_servicio.jb_vender(jb_sesion, jb_datos.model_dump(), jb_usuario.id_usuario)

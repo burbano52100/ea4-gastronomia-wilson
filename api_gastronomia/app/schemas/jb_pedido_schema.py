@@ -115,3 +115,25 @@ class JbPedidoRespuesta(JbModeloRespuesta):
     total: JbNumero
     # Ítems del pedido
     detalle: list[JbItemPedidoRespuesta]
+
+
+# ----- VENTA RAPIDA (usabilidad.md, paso B1): esquema JbVentaCrear -----
+# Datos para vender un producto en un solo paso (POST /pedidos/venta)
+class JbVentaCrear(JbModeloEntrada):
+    # Cliente que compra: debe existir y estar ACTIVO
+    id_cliente: int = Field(gt=0)
+    # Producto que se vende: debe estar DISPONIBLE
+    id_producto: int = Field(gt=0)
+    # Cantidad mayor que 0, con máximo 2 decimales
+    cantidad: JbCantidadPedido
+    # Tipo de pedido; si no se envía queda PARA_LLEVAR
+    tipo_pedido: JbTipoPedido = "PARA_LLEVAR"
+    # Observaciones opcionales, máximo 255 caracteres
+    observaciones: str | None = Field(default=None, max_length=255)
+
+    # Ejemplo que muestra Swagger al pulsar "Try it out"
+    model_config = ConfigDict(json_schema_extra={"examples": [{
+        "id_cliente": 1,  # ejemplo del campo id_cliente
+        "id_producto": 9,  # ejemplo del campo id_producto
+        "cantidad": 2,  # ejemplo del campo cantidad
+    }]})

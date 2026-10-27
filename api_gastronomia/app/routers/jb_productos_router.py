@@ -11,6 +11,9 @@ from app.database.jb_conexion_mysql import JbSesion
 # Esquemas de productos, receta y costo
 from app.schemas.jb_producto_schema import (
     JbCostoProducto,  # forma de la respuesta del costo
+    # ----- DESCUENTO (usabilidad.md, paso A3): esquemas del descuento -----
+    JbDescuento,  # datos del descuento
+    JbDescuentoRespuesta,  # forma de la respuesta del descuento
     JbProductoActualizar,  # datos para modificar
     JbProductoCrear,  # datos para crear
     JbProductoRespuesta,  # forma de la respuesta
@@ -121,3 +124,18 @@ def jb_eliminar_producto(id_producto: int, jb_sesion: JbSesion):
     """
     # El servicio decide si es borrado lógico o físico
     return jb_servicio.jb_eliminar(jb_sesion, id_producto)
+
+
+# ----- DESCUENTO (usabilidad.md, paso A3): ruta PATCH /api/v1/productos/{id_producto}/descuento -----
+# PATCH /api/v1/productos/{id}/descuento: baja el precio de venta en un porcentaje (solo ADMIN)
+@jb_router.patch("/{id_producto}/descuento", response_model=JbDescuentoRespuesta, dependencies=JB_ADMIN,
+                 summary="Aplicar descuento", responses={**JB_R400, **JB_R404})  # título en Swagger y errores que puede responder
+# Recibe el id_producto de la URL, el cuerpo JSON ya validado y la sesión de MySQL
+def jb_descuento_producto(id_producto: int, jb_datos: JbDescuento, jb_sesion: JbSesion):
+    """Baja el precio de venta en el porcentaje enviado (mayor que 0 y menor que 100).
+    Cada descuento se calcula sobre el precio actual. Los pedidos ya registrados conservan su precio.
+
+    **Roles:** ADMIN.
+    """
+    # Pasa el id y el porcentaje al servicio
+    return jb_servicio.jb_aplicar_descuento(jb_sesion, id_producto, jb_datos.porcentaje)

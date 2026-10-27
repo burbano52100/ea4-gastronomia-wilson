@@ -693,19 +693,21 @@ El PDF deja algunas cosas sin definir. Estas son mis recomendaciones como progra
 
 ## 19. Lista de revisión final
 
-- [ ] API en FastAPI con arquitectura por capas (routers, services, repositories, models, schemas, core y database)
-- [ ] Los 65 endpoints con el prefijo /api/v1
-- [ ] Todos los endpoints privados menos /auth/login; 401 y 403 funcionando
-- [ ] Token JWT con expiración, enviado como Bearer en el encabezado Authorization
-- [ ] RN01 a RN06 funcionando
-- [ ] MySQL (bd_gastronomia) para todo menos las calificaciones, que van en MongoDB (bd_gastronomia_nosql)
-- [ ] La API se conecta a MySQL con un usuario de privilegios mínimos, no con root
-- [ ] .env fuera de GitHub y .env.example en GitHub
-- [ ] Carpeta database/ con DDL, DML (10 o más registros por tabla principal), DCL y script de MongoDB con $jsonSchema
-- [ ] docker-compose.yml con MySQL 8 y MongoDB 7
-- [ ] requirements.txt y README.md
-- [ ] Cada endpoint documentado en Swagger
-- [ ] Colección de Postman exportada en el repositorio, con pruebas de cada servicio
-- [ ] Tu inicial en archivos, funciones, clases, variables, rutas y controladores
+Estado al 27 de octubre de 2026, después de probar todo el proyecto. El detalle de las pruebas está en `api_gastronomia/README.md`, sección 15 "Pruebas realizadas".
+
+- [x] API en FastAPI con arquitectura por capas (routers, services, repositories, models, schemas, core y database)
+- [x] Los 65 endpoints con el prefijo /api/v1 (el proyecto tiene 67: se agregaron el descuento y la venta rápida)
+- [x] Todos los endpoints privados menos /auth/login; 401 y 403 funcionando
+- [x] Token JWT con expiración, enviado como Bearer en el encabezado Authorization
+- [x] RN01 a RN06 funcionando
+- [x] MySQL (bd_gastronomia) para todo menos las calificaciones, que van en MongoDB (bd_gastronomia_nosql)
+- [x] La API se conecta a MySQL con un usuario de privilegios mínimos, no con root
+- [x] .env fuera de GitHub y .env.example en GitHub
+- [x] Carpeta database/ con DDL, DML (10 o más registros por tabla principal), DCL y script de MongoDB con $jsonSchema
+- [x] docker-compose.yml con MySQL 8 y MongoDB 7 (está en el proyecto, pero no se pudo probar porque Docker no funciona en este equipo)
+- [x] requirements.txt y README.md
+- [x] Cada endpoint documentado en Swagger (los 67 tienen título y descripción)
+- [ ] Colección de Postman exportada en el repositorio, con pruebas de cada servicio (pendiente: las pruebas se hacen con Thunder Client; falta exportar esa colección y guardarla en el repositorio)
+- [x] Tu inicial en archivos, funciones, clases, variables, rutas y controladores (prefijo jb_; si también va en las rutas de la URL, está entre las preguntas de la sección 18)
 - [ ] Anexo Formato 6 con sus 12 secciones, subido al enlace del instructor
 - [ ] Sustentación preparada

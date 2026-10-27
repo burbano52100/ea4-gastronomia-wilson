@@ -155,7 +155,7 @@ En producción la API debe ir detrás de HTTPS, para que la contraseña no viaje
 7. Agregue pruebas en la pestaña Tests, por ejemplo que el código de respuesta sea 200 o 201. Incluya también los casos negativos: sin token (401), rol sin permiso (403), id que no existe (404) y dato repetido (409).
 8. Exporte la colección (menú de la colección > Export) y guárdela en el repositorio: el instructivo pide entregar la colección de pruebas.
 
-## 7. Endpoints (65)
+## 7. Endpoints (67)
 
 Todas las rutas empiezan por `/api/v1`. "Todos" significa cualquier usuario con token válido.
 
@@ -177,6 +177,7 @@ Todas las rutas empiezan por `/api/v1`. "Todos" significa cualquier usuario con 
 | GET | /productos/categoria/{id_categoria} | Todos |
 | GET | /productos/{id}/receta | ADMIN, COCINERO |
 | GET | /productos/{id}/costo | ADMIN |
+| PATCH | /productos/{id}/descuento | ADMIN |
 | GET, POST | /insumos | ADMIN, COCINERO |
 | GET, PUT, DELETE | /insumos/{id} | ADMIN, COCINERO |
 | GET | /insumos/stock-bajo | ADMIN, COCINERO |
@@ -195,13 +196,20 @@ Todas las rutas empiezan por `/api/v1`. "Todos" significa cualquier usuario con 
 | GET, PUT, DELETE | /pedidos/{id} | ADMIN, CAJERO |
 | GET | /pedidos/estado/{estado} | ADMIN, CAJERO, COCINERO |
 | PATCH | /pedidos/{id}/estado | ADMIN, CAJERO, COCINERO |
+| POST | /pedidos/venta | ADMIN |
 | GET | /reportes/ventas?desde=AAAA-MM-DD&hasta=AAAA-MM-DD | ADMIN |
 | GET | /reportes/productos-mas-vendidos?limite=10 | ADMIN |
 | GET, POST | /calificaciones | ADMIN, CAJERO |
 | GET, PUT, DELETE | /calificaciones/{id} | ADMIN, CAJERO |
 | GET | /calificaciones/producto/{id_producto} | ADMIN, CAJERO |
 
-Cuenta: 3 de autenticación + 50 del CRUD (10 recursos x 5 servicios) + 12 de consultas y procesos = 65.
+Cuenta: 3 de autenticación + 50 del CRUD (10 recursos x 5 servicios) + 14 de consultas y procesos = 67.
+
+Los dos últimos procesos se agregaron aparte del instructivo:
+- `PATCH /productos/{id}/descuento` baja el precio de venta de un producto en un porcentaje.
+- `POST /pedidos/venta` registra en una sola petición un pedido de un producto, ya ENTREGADO, y descuenta el inventario (RN01 y RN03).
+
+Cómo se usan: `usabilidad.md` (en la carpeta principal del repositorio), secciones "Descuento en un producto" y "Venta rápida de un producto". Cómo se programaron y dónde está su código: al final del mismo archivo, sección "Cómo programar una funcionalidad nueva (paso a paso)". En el código, cada bloque está marcado con un comentario `# ----- DESCUENTO` o `# ----- VENTA RAPIDA`.
 
 ## 8. Reglas de negocio y dónde están
 
@@ -311,3 +319,22 @@ docker compose exec -T mongo sh -c 'mongorestore -u $MONGO_INITDB_ROOT_USERNAME 
 | 500 "MongoDB rechazó el usuario de la API" | Ejecute el script 04 y revise MONGO_USUARIO y MONGO_PASSWORD |
 | El login responde 401 con datos correctos | El usuario puede estar INACTIVO; un usuario insertado a mano con SQL debe llevar el hash bcrypt, no la clave en texto plano |
 | Tildes raras al ver respuestas en PowerShell 5.1 | Es solo la forma de mostrarlas; los datos quedan bien guardados. Envíe siempre `-ContentType "application/json; charset=utf-8"` |
+
+## 15. Pruebas realizadas
+
+El 27 de octubre de 2026 se probó todo el proyecto en el equipo de desarrollo, con MySQL 8.4.13 y MongoDB 7.0.45 portables, sin descargar nada. Las pruebas que cambian datos se hicieron en bases temporales, que se borraron al terminar. Las bases reales solo se consultaron.
+
+| Prueba | Qué se revisó | Resultado |
+|---|---|---|
+| Scripts de `database/` | 01, 02 y 03 en MySQL y 04 en MongoDB, sobre bases vacías | Sin errores. Quedan las 11 tablas con 10 usuarios, 10 categorías, 18 insumos, 10 proveedores, 18 clientes, 15 productos, 57 líneas de receta, 10 compras, 20 ítems de compra, 20 pedidos y 39 ítems de pedido. El usuario de la API solo tiene SELECT, INSERT, UPDATE y DELETE. La colección calificaciones queda con su validador, 3 índices y 10 documentos |
+| `usabilidad.md` completa (en la carpeta principal del repositorio) | Los 90 pasos en orden (1 a 70, E1 a E11 y N1 a N9): 93 peticiones | Los 90 pasos salieron bien. Se hicieron 265 revisiones (el código de respuesta, los valores que dice "Ver funcionando" y las consultas de Workbench) y ninguna falló. La API no respondió ningún error 500 |
+| Camino B de la sección 5 (`datos_de_ejemplo/`) | El ADMIN por SQL, los 9 usuarios por la API con los pasos de `jb_usuarios_por_api.ps1`, los bloques 2 a 13 y los bloques de MongoDB | Quedan los mismos datos que con el script 02, en las 11 tablas y en MongoDB. Solo cambia la hora de los pedidos de hoy, que se calcula con NOW() al cargar. Las 10 contraseñas quedan como hash bcrypt, Sandra (INACTIVA) recibe 401 al iniciar sesión y el bloque 5 de MongoDB es rechazado con "Document failed validation" |
+| Código | Compilación, comentarios, símbolos, claves y librerías | Todo compila y ninguna línea de Python está sin comentario. No hay emojis ni símbolos raros en los 84 archivos del repositorio. Las claves del `.env` no están en ningún archivo que se sube a GitHub, y las de la API son las mismas de los scripts 03 y 04. Las librerías instaladas son las de `requirements.txt` |
+| Referencias de `usabilidad.md` | Las 208 citas "archivo, líneas X a Y" y los bloques de código de "Cómo programar una funcionalidad nueva" | Todas apuntan a la función o clase correcta, y los bloques son iguales al código del proyecto |
+| Instalación real | La API con el `.env` del equipo y las bases reales, solo consultas | El login del ADMIN y las 13 consultas respondieron 200 |
+
+Lo que no se pudo probar: `docker-compose.yml`, porque Docker no funciona en el equipo de desarrollo (la virtualización está apagada en la BIOS).
+
+Cómo se corrieron los archivos de MongoDB y de PowerShell:
+- El equipo no tiene `mongosh`. Por eso `04_jb_mongo_calificaciones.js` y `jb_datos_ejemplo_mongodb.js` se ejecutaron con Node.js, que ya estaba instalado.
+- Los pasos de `jb_usuarios_por_api.ps1` se pegaron en PowerShell 5.1, como dice el archivo.

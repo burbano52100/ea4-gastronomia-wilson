@@ -285,3 +285,44 @@ def jb_cambiar_estado(jb_sesion: Session, jb_id: int, jb_estado_nuevo: str) -> J
     jb_sesion.commit()
     # Devuelve el pedido actualizado
     return jb_pedido
+
+
+# ----- VENTA RAPIDA (usabilidad.md, paso B2): servicio jb_vender -----
+# Vende un producto en un solo paso: registra el pedido ya ENTREGADO y descuenta el inventario
+def jb_vender(jb_sesion: Session, jb_datos: dict, jb_id_usuario: int) -> JbPedido:
+    """Venta de mostrador: hace en una sola petición lo que normalmente son tres (registrar el pedido,
+    pasarlo a EN_PREPARACION y a ENTREGADO). Todo va en una sola transacción: si el inventario
+    no alcanza responde 409 (RN03) y no se guarda nada."""
+    # Comprueba el cliente (400 si no existe o está INACTIVO)
+    jb_cliente = jb_validar_cliente(jb_sesion, jb_datos["id_cliente"])
+    # El producto y la cantidad, con la misma forma que un ítem de POST /pedidos
+    jb_items = [{"id_producto": jb_datos["id_producto"], "cantidad": jb_datos["cantidad"]}]
+    # RN01: valida el producto y calcula subtotal y total; el precio sale de la base de datos
+    jb_detalle, jb_total = jb_armar_detalle(jb_sesion, jb_items)
+    # Arma el pedido
+    jb_pedido = JbPedido(
+        # Fecha y hora actual de Colombia
+        fecha_pedido=jb_ahora(),
+        # Cliente
+        cliente=jb_cliente,
+        # Usuario que vende (viene del token)
+        id_usuario=jb_id_usuario,
+        # Tipo de pedido
+        tipo_pedido=jb_datos["tipo_pedido"],
+        # La venta queda entregada de una vez: el cliente se lleva el producto
+        estado="ENTREGADO",
+        # Total calculado (RN01)
+        total=jb_total,
+        # Observaciones; get devuelve None si no se enviaron
+        observaciones=jb_datos.get("observaciones"),
+        # Ítem de la venta
+        detalle=jb_detalle,
+    )
+    # Inserta el pedido y su ítem sin confirmar todavía; así el ítem ya tiene el id del producto
+    jb_repositorio.jb_guardar(jb_sesion, jb_pedido)
+    # RN03: descuenta los insumos de la receta; si no alcanzan responde 409 y se deshace el INSERT
+    jb_descontar_inventario(jb_sesion, jb_pedido)
+    # Confirma todo junto: el pedido y el inventario
+    jb_sesion.commit()
+    # Devuelve el pedido registrado
+    return jb_pedido

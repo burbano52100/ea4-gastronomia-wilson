@@ -193,3 +193,43 @@ def jb_costo(jb_sesion: Session, jb_id: int) -> dict:
         # Detalle de la receta
         "detalle": jb_lineas,
     }
+
+
+# ----- DESCUENTO (usabilidad.md, paso A2): servicio jb_aplicar_descuento -----
+# Baja el precio de venta de un producto en un porcentaje
+def jb_aplicar_descuento(jb_sesion: Session, jb_id: int, jb_porcentaje: Decimal) -> dict:
+    """Precio nuevo = precio actual x (100 - porcentaje) / 100. Los pedidos ya registrados no cambian:
+    detalle_pedido guardó el precio que tenía el producto en ese momento (RN01)."""
+    # Busca el producto y lo bloquea mientras se modifica
+    jb_producto = jb_repositorio.jb_buscar_para_actualizar(jb_sesion, jb_id)
+    # Si no existe...
+    if jb_producto is None:
+        # ...404
+        raise jb_no_encontrado(f"El producto {jb_id}")
+    # Guarda el precio de antes para mostrarlo en la respuesta
+    jb_precio_anterior = jb_producto.precio_venta
+    # Calcula el precio nuevo y lo redondea a 2 decimales
+    jb_precio_nuevo = jb_dinero(jb_precio_anterior * (100 - jb_porcentaje) / 100)
+    # La tabla no acepta precios en 0 (CHECK precio_venta > 0)
+    if jb_precio_nuevo <= 0:
+        # 400 explicando qué hacer
+        raise jb_dato_invalido("Con ese descuento el precio quedaría en 0: use un porcentaje menor")
+    # Cambia el precio de venta
+    jb_producto.precio_venta = jb_precio_nuevo
+    # Envía el UPDATE a MySQL
+    jb_repositorio.jb_guardar(jb_sesion, jb_producto)
+    # Confirma la transacción
+    jb_sesion.commit()
+    # Devuelve el precio de antes y el de ahora
+    return {
+        # Id del producto
+        "id_producto": jb_id,
+        # Nombre del producto
+        "nombre": jb_producto.nombre,
+        # Precio antes del descuento
+        "precio_anterior": jb_precio_anterior,
+        # Porcentaje aplicado
+        "porcentaje": jb_porcentaje,
+        # Precio después del descuento
+        "precio_nuevo": jb_precio_nuevo,
+    }

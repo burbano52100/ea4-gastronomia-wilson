@@ -1,4 +1,7 @@
 """Esquemas de productos (RF04), de su receta (RF05) y de su costo de producción (RF06)."""
+# ----- DESCUENTO (usabilidad.md, paso A1): import de Decimal -----
+# Decimal: números exactos para el porcentaje del descuento
+from decimal import Decimal
 # Literal: solo permite ciertos valores fijos
 from typing import Literal
 
@@ -121,3 +124,27 @@ class JbCostoProducto(BaseModel):
     margen_porcentaje: JbNumero
     # Líneas de la receta con su costo
     detalle: list[JbLineaReceta]
+
+
+# ----- DESCUENTO (usabilidad.md, paso A1): esquemas JbDescuento y JbDescuentoRespuesta -----
+# Datos para aplicar un descuento (PATCH /productos/{id}/descuento)
+class JbDescuento(JbModeloEntrada):
+    # Porcentaje de descuento: mayor que 0, menor que 100 y con máximo 2 decimales
+    porcentaje: Decimal = Field(gt=0, lt=100, max_digits=5, decimal_places=2)
+
+    # Ejemplo que muestra Swagger al pulsar "Try it out"
+    model_config = ConfigDict(json_schema_extra={"examples": [{"porcentaje": 10}]})
+
+
+# Resultado del descuento: el precio de antes y el de ahora
+class JbDescuentoRespuesta(BaseModel):
+    # Id del producto
+    id_producto: int
+    # Nombre del producto
+    nombre: str
+    # Precio antes del descuento
+    precio_anterior: JbNumero
+    # Porcentaje aplicado
+    porcentaje: JbNumero
+    # Precio después del descuento
+    precio_nuevo: JbNumero
