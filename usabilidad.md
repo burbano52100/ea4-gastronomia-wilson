@@ -13,7 +13,7 @@ Todas las rutas llevan en Auth > Bearer el `access_token` que devuelve el paso 1
 ```json
 {
   "correo": "burbano@gastronomia.com",
-  "password": "ADMIN_1234"
+  "password": "Admin123*"
 }
 ```
 
@@ -1834,18 +1834,18 @@ Los archivos están dentro de la carpeta `api_gastronomia`. Las líneas incluyen
 
 ### Antes de empezar
 
-1. Encienda las bases de datos: doble clic en `C:\Users\BURBANO\bd_gastronomia_local\iniciar_bases.bat`
+1. Encienda las bases de datos: abra Docker Desktop, espere a que diga que está corriendo y, en una terminal abierta en la carpeta `api_gastronomia`, escriba `docker compose up -d`. Con `docker compose ps` los dos contenedores deben decir `healthy`.
 
 2. Encienda el servidor en la terminal de VS Code. Corre con `--reload`: cada vez que guarda un archivo (Ctrl+S) se reinicia solo. Si el código tiene un error, la terminal lo muestra y la API no responde hasta que lo corrija.
 
    ```
-   cd "C:\Users\BURBANO\Desktop\TRABAJOS\Miercoles\istructivo mongo db\api_gastronomia"
+   cd "C:\Users\SENA\Desktop\BURBANO\miercoles\api_gastronomia"
    venv\Scripts\activate
    uvicorn app.jb_main:jb_app --reload
    ```
 
 3. Para ver las bases de datos:
-   - **MySQL Workbench:** ya está creada la conexión `API_WILSON` (Hostname `127.0.0.1`, Port `3306`, Username `root`, contraseña `1234` guardada, base `bd_gastronomia`). Ábrala con doble clic, escriba `USE bd_gastronomia;` y luego la consulta de cada paso. Para ejecutar, pulse el rayo.
+   - **MySQL Workbench:** ya está creada la conexión `API_WILSON` (Hostname `127.0.0.1`, Port `3307`, Username `root`, base `bd_gastronomia`). Ábrala con doble clic; la primera vez pide la contraseña, que es la de `MYSQL_ROOT_PASSWORD` del `.env` (marque *Save password in vault* para que no la vuelva a pedir). Escriba `USE bd_gastronomia;` y luego la consulta de cada paso. Para ejecutar, pulse el rayo.
    - **MongoDB Compass:** conéctese con `mongodb://jb_root:CLAVE@localhost:27018/?authSource=admin`, cambiando CLAVE por la de `MONGO_ROOT_PASSWORD` del `.env`. Para ver los datos, abra la pestaña MONGOSH, escriba `use bd_gastronomia_nosql` y luego el comando de cada paso (55 a 60). Para ejecutar, pulse Enter. En MONGOSH no se escribe SQL: vea la tabla de equivalencias al inicio de la sección "Calificaciones (MongoDB)".
 
 4. Vuelva a los datos iniciales antes de seguir los pasos de esta guía, si ya hizo otras pruebas, y también al terminar. Los ids de esta guía (usuario 11, categoría 11, producto 16, pedido 130...) salen de los datos iniciales: si la base tiene registros de otras pruebas, los ids cambian y las respuestas no coinciden con lo que dice cada paso.

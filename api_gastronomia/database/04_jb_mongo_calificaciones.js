@@ -81,27 +81,33 @@ jbBd.calificaciones.createIndex({ fecha: -1 }, { name: 'idx_calificaciones_fecha
 
 // Rol con privilegios mínimos: solo consultar, insertar, actualizar y borrar documentos de calificaciones
 // (es el equivalente al GRANT SELECT, INSERT, UPDATE, DELETE del script 03 de MySQL)
+// Permisos: sobre la colección calificaciones, solo estas cuatro acciones
+var jbPermisos = [{ resource: { db: 'bd_gastronomia_nosql', collection: 'calificaciones' }, actions: ['find', 'insert', 'update', 'remove'] }];
 if (jbBd.getRole('jb_rol_api_calificaciones')) {
-  // Si el rol ya existe se borra, para poder ejecutar el script varias veces
-  jbBd.dropRole('jb_rol_api_calificaciones');
+  // Si el rol ya existe se actualiza (no se borra), para poder ejecutar el script varias veces
+  jbBd.updateRole('jb_rol_api_calificaciones', { privileges: jbPermisos, roles: [] });
+} else {
+  // Crea el rol
+  jbBd.createRole({
+    // Nombre del rol
+    role: 'jb_rol_api_calificaciones',
+    // Permisos de arriba
+    privileges: jbPermisos,
+    // No hereda permisos de otros roles
+    roles: []
+  });
 }
-// Crea el rol
-jbBd.createRole({
-  // Nombre del rol
-  role: 'jb_rol_api_calificaciones',
-  // Permisos: sobre la colección calificaciones, solo estas cuatro acciones
-  privileges: [{ resource: { db: 'bd_gastronomia_nosql', collection: 'calificaciones' }, actions: ['find', 'insert', 'update', 'remove'] }],
-  // No hereda permisos de otros roles
-  roles: []
-});
 
 // Usuario con el que se conecta la API (nunca con root)
+// CONTRASEÑA DE DESARROLLO: debe ser la misma de MONGO_PASSWORD en el archivo .env.
 if (jbBd.getUser('jb_api_gastronomia')) {
-  // Si el usuario ya existe se borra, para poder ejecutar el script varias veces
-  jbBd.dropUser('jb_api_gastronomia');
+  // Si el usuario ya existe se actualiza en vez de borrarlo: si se borrara, la API encendida
+  // perdería su sesión con MongoDB y respondería 500 en /calificaciones hasta reiniciarla
+  jbBd.updateUser('jb_api_gastronomia', { pwd: 'JbMongoGastro_2026', roles: [{ role: 'jb_rol_api_calificaciones', db: 'bd_gastronomia_nosql' }] });
+} else {
+  // Crea el usuario
+  jbBd.createUser({ user: 'jb_api_gastronomia', pwd: 'JbMongoGastro_2026', roles: [{ role: 'jb_rol_api_calificaciones', db: 'bd_gastronomia_nosql' }] });
 }
-// Crea el usuario. CONTRASEÑA DE DESARROLLO: debe ser la misma de MONGO_PASSWORD en el archivo .env.
-jbBd.createUser({ user: 'jb_api_gastronomia', pwd: 'JbMongoGastro_2026', roles: [{ role: 'jb_rol_api_calificaciones', db: 'bd_gastronomia_nosql' }] });
 
 // Milisegundos de un minuto y de un día, para calcular las fechas desde hoy
 var jbMinuto = 60 * 1000;
